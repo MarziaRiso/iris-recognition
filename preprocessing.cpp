@@ -70,6 +70,20 @@ void convert_reduce_saturation(Mat &img_in, Mat &img_out, int thresh)
 	merge(channel_out, 3, img_out);
 }
 
+void convert_whitening(Mat &img_in, Mat &img_out, int thresh)
+{
+	for (int i = 0; i < img_in.rows; i++) {
+		for (int j = 0; j < img_in.cols; j++) {
+			Vec3b bgr = img_in.at<Vec3b>(i, j);
+			for (int k = 0; k < 3; k++) {
+				bgr[k] += (uchar)(((255 - bgr[k])*thresh) / 100);
+			}
+			img_out.at<Vec3b>(i, j) = bgr;
+		}
+	}
+}
+
+
 void hough_something() {
 	Mat img_in = imread("preprocessing/IMG_070_L_3.jpg", IMREAD_GRAYSCALE);
 	Mat img_out = Mat(img_in.rows, img_in.cols, CV_8UC3);

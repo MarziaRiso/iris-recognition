@@ -1,147 +1,41 @@
 #include "coder_lbp.h"
+#include "LBP.h"
 #include "hist.h"
 
-//Crea il valore LBP associato al pixel (row, column) dell'immagine img_in
-int standardLBP(Mat img_in, int row, int column) {
-	int LBP = 0;
-	int exp = 7;
-	uchar rgba = 0;
-	uchar thresh = img_in.at<uchar>(row, column);
-	//printf("THRESHOLD: %d\n", thresh);
-	vector<Vec2i> pos = { Vec2i(-1,-1),Vec2i(-1,0),Vec2i(-1,1),
-		Vec2i(0,1),Vec2i(1,1),
-		Vec2i(1,0),Vec2i(1,-1),Vec2i(0,-1) };
+coder_LBP* coder_lbp_create() {
+	coder_LBP* coder = (coder_LBP*) calloc(1, sizeof(coder_LBP));
+	if (coder == NULL) return NULL;
 
-	for (int i = 0; i < pos.size(); i++) {
-		rgba = img_in.at<uchar>(row + pos[i][0], column + pos[i][1]);
-		//printf("PIXEL H:%d W:%d COLOR: %d\n", row+pos[i][0], column + pos[i][1], rgba);
-		LBP += (rgba >= thresh ? 1 : 0) << exp--;
-	}
-	return LBP;
+	coder->input = NULL;
+	coder->mask = NULL;
+	coder->output = NULL;
+
+	return coder;
 }
 
-//Crea l'immagine LBP di img_in
-void calcStandardLBP(coder_LBP *coder) {
-	for (int i = 1; i < coder->input.rows - 1; i++) {
-		for (int j = 1; j < coder->input.cols - 1; j++) {
-			int LBP = standardLBP(coder->input, i, j);
-			printf("Row: %d Col: %d -> LBP: %f\n", i, j, LBP);
-			coder->output.at<uchar>(i, j) = LBP;
-		}
-	}
-
-	Mat hist;
-	computeHist(coder->output, hist);
-	showHist(hist);
+void coder_lbp_encode(coder_LBP* coder) {
+	calc_standard_lbp(coder);
+	//calc_contrast_lbp(coder);
 }
 
-//Utilizza la formula trovata nel paper
-float contrastLBP(Mat img_in, int row, int column) {
-	float LBP = 0;
-	int exp = 7;
-	uchar rgba = 0;
-	vector<Vec2i> pos = {Vec2i(-1,-1),Vec2i(-1,0),Vec2i(-1,1),
-		Vec2i(0,1),Vec2i(1,1),
-		Vec2i(1,0),Vec2i(1,-1),Vec2i(0,-1) };
+void coder_lbp_free(coder_LBP* coder) {
 
-	float mu = 0;
-	for (int i = 0; i < pos.size(); i++)
-		mu += img_in.at<uchar>(row + pos[i][0], column + pos[i][1]);
-	mu /= pos.size();
+	coder->input.release();
+	coder->mask.release();
+	coder->output.release();
+	coder->histogram.release();
 
-	for (int i = 0; i < pos.size(); i++) {
-		rgba = img_in.at<uchar>(row + pos[i][0], column + pos[i][1]);
-		//printf("PIXEL H:%d W:%d COLOR: %d\n", row + pos[i][0], column + pos[i][1], rgba);
-		LBP += powf(rgba - mu, 2.0f);
-	}
-
-	LBP /= pos.size();
-	//printf("R: %d C:%d -> MU: %f LBP: %f\n",row, column, mu, LBP);
-
-	return LBP;
-}
-
-//Utilizza la formula delle differenze positive e negative
-float differenceLBP(Mat img_in, int row, int column) {
-	float positive = 0.0f;
-	float negative = 0.0f;
-	int n_positive = 0;
-	int n_negative = 0;
-	uchar rgba = 0;
-	uchar threshold = img_in.at<uchar>(row, column);
-	//printf("THRESHOLD : %d\n", threshold);
-
-
-	vector<Vec2i> pos = { Vec2i(-1,-1),Vec2i(-1,0),Vec2i(-1,1),
-		Vec2i(0,1),Vec2i(1,1),
-		Vec2i(1,0),Vec2i(1,-1),Vec2i(0,-1) };
-
-	for (int i = 0; i < pos.size(); i++) {
-		rgba = img_in.at<uchar>(row + pos[i][0], column + pos[i][1]);
-		//printf("R: %d C:%d -> COLOR: %d\n", row + pos[i][0], column + pos[i][1], rgba);
-		if (img_in.at<uchar>(row + pos[i][0], column + pos[i][1]) >= threshold) {
-			positive += rgba;
-			n_positive++;
-		} else {
-			negative += rgba;
-			n_negative++;
-		}
-	}
-
-	if (!n_positive) return -(negative / n_negative);
-	else if (!n_negative) return positive / n_positive;
-	return positive/n_positive - negative/n_negative;
-}
-
-//Crea l'immagine LBP di img_in
-void calcContrastLBP(coder_LBP *coder) {
-	float max = 0;
-	float min = 0;
-	Mat tmp = Mat(coder->input.rows, coder->input.cols, CV_32FC1);
-	for (int i = 1; i < coder->input.rows - 1; i++) {
-		for (int j = 1; j < coder->input.cols - 1; j++) {
-			float LBP =contrastLBP(coder->input, i, j);
-			printf("Row: %d Col: %d -> LBP: %f\n", i, j, LBP);
-			max = (max >= LBP ? max : LBP);
-			min = (min <= LBP ? min : LBP);
-			tmp.at<float>(i, j) = LBP;
-		}
-	}
-
-	printf("MIN : %f MAX:%f", min, max);
-
-	min = abs(min);
-	max = max + min;
-
-	for (int i = 1; i < tmp.rows - 1; i++) {
-		for (int j = 1; j < tmp.cols - 1; j++) {
-			float color_f = tmp.at<float>(i, j);
-			int color_u = (int) ((color_f + min) * 255 / max);
-			//printf("PIXEL R:%d C:%d PREV: %f NOW: %d\n",i,j, color_f, color_u);
-			coder->output.at<uchar>(i, j) = color_u;
-		}
-	}
-
-	//printf("MIN : %f MAX:%f", min, max);
-
-	Mat hist;
-	computeHist(coder->output, hist);
-	showHist(hist);
+	free(coder);
 }
 
 
-void createImageEqualized(coder_LBP *coder) {
-	Mat channel_in[3] = { Mat(coder->input.rows, coder->input.cols, CV_8UC1),
-		Mat(coder->input.rows, coder->input.cols, CV_8UC1),
-		Mat(coder->input.rows, coder->input.cols, CV_8UC1) };
 
-	split(coder->input, channel_in);
 
-	for (int i = 0; i < 3; i++)
-		equalizeHist(channel_in[i], channel_in[i]);
 
-	merge(channel_in, 3, coder->output);
-}
+
+
+
+
 
 
 //int main() {

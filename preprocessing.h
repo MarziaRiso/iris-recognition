@@ -10,6 +10,7 @@ void convert_average(Mat &img_in, Mat&img_out);
 void convert_luminosity(Mat &img_in, Mat&img_out);
 void convert_clahe(Mat &img_in, Mat &img_out);
 void convert_reduce_saturation(Mat &img_in, Mat &img_out, int thresh);
+void convert_whitening(Mat &img_in, Mat &img_out, int thresh);
 
 int calcPixelPosterize(Mat &img_in, int row, int column, int windowSize);
 void calcPosterizeGrayscale(Mat &img_in, Mat &img_out, int windowSize);

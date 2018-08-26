@@ -5,5 +5,5 @@
 using namespace std;
 using namespace cv;
 
-void computeHist(Mat img_in, Mat &histogram);
-void showHist(Mat &histogram);
+void computeHist(Mat img_in, Mat& histogra);
+void showHist(Mat histogram);
