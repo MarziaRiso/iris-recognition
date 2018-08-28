@@ -5,13 +5,90 @@
 #include "log.h"
 #include "coder_lbp.h"
 #include "coder_blob.h"
+#include "coder_spatiogram.h"
 #include "mask.h"
+#include "hist.h"
 #include "preprocessing.h"
 
 using namespace std;
 using namespace cv;
 
 int main() {
+
+	//MAIN DEL MATCHING CON LBP
+	coder_LBP* coder = coder_lbp_create();
+	coder->input = imread("matching/IMG_006_L_1.iris.norm.png",IMREAD_GRAYSCALE);
+	coder->mask = imread("matching/IMG_006_L_1.defectsnorm.png", IMREAD_GRAYSCALE);
+	coder->output = Mat(coder->input.rows, coder->input.cols, CV_8UC1);
+	coder_lbp_encode(coder);
+
+	coder_LBP* coder_2 = coder_lbp_create();
+	coder_2->input = imread("matching/IMG_006_L_1.iris.norm.png", IMREAD_GRAYSCALE);
+	coder_2->mask = imread("matching/IMG_006_L_1.defectsnorm.png", IMREAD_GRAYSCALE);
+	coder_2->output = Mat(coder->input.rows, coder->input.cols, CV_8UC1);
+	coder_lbp_encode(coder_2);
+
+	//showHist(coder->histogram);
+	showHist(coder_2->histogram);
+
+	double result = compareHist(coder->histogram, coder_2->histogram, CV_COMP_CHISQR);
+	printf("Result: %f\n", result);
+
+	/*namedWindow("MASK", WINDOW_NORMAL);
+	imshow("MASK",coder->output);
+	imwrite("eyes/lbp_coder.png", coder->output);*/
+
+	coder_lbp_free(coder);
+	coder_lbp_free(coder_2);
+
+	waitKey(0);
+	
+
+	//MAIN DEL CODER DEGLI SPATIOGRAM
+	/*coder_spatiogram* coder = coder_spatiogram_create();
+	Mat input = Mat(4, 5, CV_8UC1);
+	input.at<uchar>(0, 0) = 0;
+	input.at<uchar>(0, 1) = 1;
+	input.at<uchar>(0, 2) = 2;
+	input.at<uchar>(0, 3) = 0;
+	input.at<uchar>(0, 4) = 2;
+	input.at<uchar>(1, 0) = 4;
+	input.at<uchar>(1, 1) = 3;
+	input.at<uchar>(1, 2) = 2;
+	input.at<uchar>(1, 3) = 2;
+	input.at<uchar>(1, 4) = 3;
+	input.at<uchar>(2, 0) = 1;
+	input.at<uchar>(2, 1) = 1;
+	input.at<uchar>(2, 2) = 5;
+	input.at<uchar>(2, 3) = 3;
+	input.at<uchar>(2, 4) = 5;
+	input.at<uchar>(3, 0) = 7;
+	input.at<uchar>(3, 1) = 9;
+	input.at<uchar>(3, 2) = 1;
+	input.at<uchar>(3, 3) = 3;
+	input.at<uchar>(3, 4) = 5;
+
+	coder->input = input;
+
+	cout << coder->input;
+	cout << "\n\n\n";
+
+	//coder->input = imread("006/IMG_006_L_1.iris.norm.png", IMREAD_GRAYSCALE);
+
+	coder_spatiogram_encode(coder);
+
+	for (int i = 0; i < 10; i++) {
+		printf("%d -> h: %f\t\t mv: %f\t\t cm: %f\t\t\n", i,
+			coder->spatiogram->histogram.at<float>(i,0),
+			coder->spatiogram->mean_vector.at<float>(i, 0), 
+			coder->spatiogram->covariance_matrix.at<float>(i, 0));
+	}
+
+	showHist(coder->spatiogram->histogram);
+	coder_spatiogram_free(coder);
+
+	cin.get();
+	waitKey(0);*/
 
 	//MAIN DEL CODER DEI BLOB
 	/*coder_blob* coder = coder_blob_create();
@@ -43,9 +120,13 @@ int main() {
 
 
 	//MAIN DEL PREPROCESSING
-	Mat img_in = imread("preprocessing/IMG_070_L_3.jpg");
+	/*Mat img_in = imread("preprocessing/IMG_070_L_3.jpg");
 	Mat img_out = Mat(img_in.rows, img_in.cols, CV_8UC3);
 
+	coder_spatiogram* coder = coder_spatiogram_create();
+	calc_spatiogram(coder);
+
+	//convert_whitening(img_in, img_out, 20);
 	//hough_something();
 	//convert_clahe(img_in,img_out);
 	//convert_reduce_saturation(img_in, img_out, 20);
@@ -54,31 +135,26 @@ int main() {
 
 	namedWindow("RGB", WINDOW_NORMAL);
 	imshow("RGB", img_out);
-	imwrite("preprocessing/IMG_070_L_3_clahe.png", img_out);
+	imwrite("preprocessing/IMG_070_L_3_white20.png", img_out);
 
-	waitKey(0);
+	waitKey(0);*/
 
 
 	//MAIN DEL CODER DEI LBP
-	/*coder_LBP *coder = (coder_LBP*)calloc(1, sizeof(coder_LBP));
-	if (coder == NULL) {
-		printf("Calloc fallita\n");
-		return -1;
-	}
-
-	coder->input = imread("006/IMG_006_L_1.jpg");
-	coder->mask = imread("006/IMG_006_L_1.defects.png", IMREAD_GRAYSCALE);
+	/*coder_LBP* coder = coder_lbp_create();
+	coder->input = imread("eyes/iris_norm.png",IMREAD_GRAYSCALE);
+	//coder->mask = imread("006/IMG_006_L_1.defects.png", IMREAD_GRAYSCALE);
 	coder->output = Mat(coder->input.rows, coder->input.cols, CV_8UC1);
 
-	delete_sclera(coder->input, coder->output);
-	//adjust_mask(coder->input, coder->mask, coder->output);
-
+	coder_lbp_encode(coder);
+	
 	namedWindow("MASK", WINDOW_NORMAL);
 	imshow("MASK",coder->output);
-	imwrite("006/IMG_006_L_1_nosclera.png", coder->output);
+	imwrite("eyes/lbp_coder.png", coder->output);
 
-	waitKey(0);
-	free(coder);*/
+	coder_lbp_free(coder);
+
+	waitKey(0);*/
 }
 
 

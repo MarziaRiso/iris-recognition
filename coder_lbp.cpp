@@ -9,6 +9,7 @@ coder_LBP* coder_lbp_create() {
 	coder->input = NULL;
 	coder->mask = NULL;
 	coder->output = NULL;
+	coder->histogram = Mat(256, 1, CV_32FC1);
 
 	return coder;
 }

@@ -5,18 +5,21 @@
 using namespace std;
 using namespace cv;
 
-struct spatiogram_entry {
-	int histogram;
-	int mean_vector;
-	int covariance_matrix;
+struct spatiogram {
+	Mat histogram;
+	Mat mean_vector;
+	Mat covariance_matrix;
 };
 
 struct coder_spatiogram {
 	Mat input;
 	Mat mask;
 	Mat output;
-	spatiogram_entry spatiogram[256];
+	spatiogram* spatiogram;
 };
+
+spatiogram* spatiogram_create();
+void spatiogram_free(spatiogram* spatio);
 
 coder_spatiogram* coder_spatiogram_create();
 void coder_spatiogram_encode(coder_spatiogram* coder);
