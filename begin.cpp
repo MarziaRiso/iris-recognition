@@ -15,8 +15,94 @@ using namespace cv;
 
 int main() {
 
+	//MAIN DEL MATCHING CON BLOB
+	coder_blob* coder = coder_blob_create();
+	coder->input = imread("matching/IMG_006_L_1.iris.norm.png",IMREAD_GRAYSCALE);
+	coder->mask = imread("matching/IMG_006_L_1.defects.norm.png", IMREAD_GRAYSCALE);
+
+	coder_blob* coder_2 = coder_blob_create();
+	coder_2->input = imread("matching/IMG_060_L_1.iris.norm.png", IMREAD_GRAYSCALE);
+	coder_2->mask = imread("matching/IMG_060_L_1.defects.norm.png", IMREAD_GRAYSCALE);
+
+
+	coder_blob_init();
+
+	coder_blob_encode(coder);
+	coder_blob_encode(coder_2);
+
+	double result = coder_blob_match(coder, coder_2);
+	printf("Result: %f\n", result);
+
+	coder_blob_free(coder);
+	coder_blob_free(coder_2);
+
+	cin.get();
+	waitKey(0);
+
+
+	//MATCHING CON HAMMING DISTANCE SHIFTATA
+	/*Mat img1 = imread("006/log_bin_merge.png", IMREAD_GRAYSCALE);
+	Mat img2 = imread("006/log_bin_merge.png", IMREAD_GRAYSCALE);
+
+	Mat mask1 = imread("006/IMG_006_L_1.defects.norm.png", IMREAD_GRAYSCALE);
+	Mat mask2 = imread("006/IMG_006_L_1.defects.norm.png", IMREAD_GRAYSCALE);
+
+	double hd = shifted_hamming_distance(img1, mask1, img2, mask2, 10);
+	printf("hamming: %f\n", hd);
+
+	cin.get();*/
+
+
+	//MATCHING MAIN
+	/*Mat v1 = (Mat_<uchar>(3, 3) << 0, 7, 5, 9, 2, 2, 2, 3, 7);
+	Mat v2 = (Mat_<uchar>(3, 3) << 0, 1, 1, 1, 0, 0, 1, 0, 0);
+	Mat v3 = (Mat_<uchar>(3, 3) << 0, 7, 7, 7, 5, 9, 2, 2, 3);
+	Mat v4 = (Mat_<uchar>(3, 3) << 2, 3, 3, 3, 2, 2, 3, 2, 2);
+
+	Mat h1 = Mat::zeros(10, 1, CV_32FC1);
+	Mat h2 = Mat::zeros(10, 1, CV_32FC1); 
+	Mat h3 = Mat::zeros(10, 1, CV_32FC1);
+	Mat h4 = Mat::zeros(10, 1, CV_32FC1);
+
+	computeHist(v1, h1);
+	computeHist(v2, h2);
+	computeHist(v3, h3);
+	computeHist(v4, h4);
+
+	double h1h1_corr = compareHist(h1, h1, CV_COMP_CORREL);
+	double h1h1_chi = compareHist(h1, h1, CV_COMP_CHISQR);
+	double h1h1_int = compareHist(h1, h1, CV_COMP_INTERSECT);
+	double h1h1_bhat = compareHist(h1, h1, CV_COMP_BHATTACHARYYA);
+
+	printf("h1h1 : %f, %f, %f, %f\n", h1h1_corr, h1h1_chi, h1h1_int, h1h1_bhat);
+
+	h1h1_corr = compareHist(h1, h2, CV_COMP_CORREL);
+	h1h1_chi = compareHist(h1, h2, CV_COMP_CHISQR);
+	h1h1_int = compareHist(h1, h2, CV_COMP_INTERSECT);
+	h1h1_bhat = compareHist(h1, h2, CV_COMP_BHATTACHARYYA);
+
+	printf("h1h2 : %f, %f, %f, %f\n", h1h1_corr, h1h1_chi, h1h1_int, h1h1_bhat);
+
+	h1h1_corr = compareHist(h1, h3, CV_COMP_CORREL);
+	h1h1_chi = compareHist(h1, h3, CV_COMP_CHISQR);
+	h1h1_int = compareHist(h1, h3, CV_COMP_INTERSECT);
+	h1h1_bhat = compareHist(h1, h3, CV_COMP_BHATTACHARYYA);
+
+	printf("h1h3 : %f, %f, %f, %f\n", h1h1_corr, h1h1_chi, h1h1_int, h1h1_bhat);
+
+	h1h1_corr = compareHist(h2, h4, CV_COMP_CORREL);
+	h1h1_chi = compareHist(h2, h4, CV_COMP_CHISQR);
+	h1h1_int = compareHist(h2, h4, CV_COMP_INTERSECT);
+	h1h1_bhat = compareHist(h2, h4, CV_COMP_BHATTACHARYYA);
+
+	printf("h2h4 : %f, %f, %f, %f\n", h1h1_corr, h1h1_chi, h1h1_int, h1h1_bhat);
+
+	cin.get();
+	waitKey(0);*/
+
+
 	//MAIN DEL MATCHING CON LBP
-	coder_LBP* coder = coder_lbp_create();
+	/*coder_LBP* coder = coder_lbp_create();
 	coder->input = imread("matching/IMG_006_L_1.iris.norm.png",IMREAD_GRAYSCALE);
 	coder->mask = imread("matching/IMG_006_L_1.defectsnorm.png", IMREAD_GRAYSCALE);
 	coder->output = Mat(coder->input.rows, coder->input.cols, CV_8UC1);
@@ -34,14 +120,14 @@ int main() {
 	double result = compareHist(coder->histogram, coder_2->histogram, CV_COMP_CHISQR);
 	printf("Result: %f\n", result);
 
-	/*namedWindow("MASK", WINDOW_NORMAL);
+	namedWindow("MASK", WINDOW_NORMAL);
 	imshow("MASK",coder->output);
-	imwrite("eyes/lbp_coder.png", coder->output);*/
+	imwrite("eyes/lbp_coder.png", coder->output);
 
 	coder_lbp_free(coder);
 	coder_lbp_free(coder_2);
 
-	waitKey(0);
+	waitKey(0);*/
 	
 
 	//MAIN DEL CODER DEGLI SPATIOGRAM
@@ -92,7 +178,7 @@ int main() {
 
 	//MAIN DEL CODER DEI BLOB
 	/*coder_blob* coder = coder_blob_create();
-	coder->input = imread("006/IMG_006_L_1.iris.norm.png", IMREAD_GRAYSCALE);
+	coder->input = imread("060/IMG_060_L_1.iris.norm.png", IMREAD_GRAYSCALE);
 
 	coder_blob_init();
 
@@ -105,19 +191,14 @@ int main() {
 		waitKey(0);
 	}
 
-	imwrite("006/log_bin_1.png", coder->log_bin_imgs[0]);
-	imwrite("006/log_bin_2.png", coder->log_bin_imgs[1]);
-	imwrite("006/log_bin_4.png", coder->log_bin_imgs[2]);
-	imwrite("006/log_bin_8.png", coder->log_bin_imgs[3]);
-
 	namedWindow("LoG", WINDOW_NORMAL);
 	imshow("LoG", coder->log_bin_merge);
-	imwrite("006/log_bin_merge.png", coder->log_bin_merge);
+	imwrite("060/log_bin_merge.png", coder->log_bin_merge);
 
 	coder_blob_free(coder);
 
-	waitKey(0);*/
-
+	waitKey(0);
+	*/
 
 	//MAIN DEL PREPROCESSING
 	/*Mat img_in = imread("preprocessing/IMG_070_L_3.jpg");
