@@ -15,5 +15,6 @@ struct coder_LBP {
 
 coder_LBP* coder_lbp_create();
 void coder_lbp_encode(coder_LBP* coder);
+double coder_lbp_match(coder_LBP* coder1, coder_LBP* coder2);
 void coder_lbp_free(coder_LBP* coder);
 

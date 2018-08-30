@@ -19,6 +19,19 @@ void coder_lbp_encode(coder_LBP* coder) {
 	//calc_contrast_lbp(coder);
 }
 
+double coder_lbp_match(coder_LBP* coder1, coder_LBP* coder2)
+{
+	Mat norm_hist1 = Mat(256, 1, CV_32FC1);
+	Mat norm_hist2 = Mat(256, 1, CV_32FC1);
+	normalize(coder1->histogram, norm_hist1);
+	normalize(coder2->histogram, norm_hist2);
+
+	cout << norm_hist1;
+	cout << norm_hist2;
+
+	return compareHist(norm_hist1, norm_hist2, CV_COMP_CORREL);
+}
+
 void coder_lbp_free(coder_LBP* coder) {
 
 	coder->input.release();

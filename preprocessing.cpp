@@ -84,41 +84,6 @@ void convert_whitening(Mat &img_in, Mat &img_out, int thresh)
 }
 
 
-void hough_something() {
-	Mat img_in = imread("preprocessing/IMG_070_L_3.jpg", IMREAD_GRAYSCALE);
-	Mat img_out = Mat(img_in.rows, img_in.cols, CV_8UC3);
-
-	medianBlur(img_in, img_out, 5);
-	//cvtColor(img_out, img_out, COLOR_BGR2GRAY);
-
-	Mat output_circles;
-	cout << "prima di hough\n";
-	HoughCircles(img_out, output_circles, HOUGH_GRADIENT, 1, 20, 50, 30, 200, 600);
-
-	//cout << output_circles;
-
-	printf("rows : %d, cols: %d", output_circles.rows, output_circles.cols);
-
-	for (int i = 0; i < output_circles.rows; i++) {
-		for (int j = 0; j < output_circles.cols; j+=3) {
-			circle(img_out, Point(output_circles.at<float>(i, j), output_circles.at<float>(i, j+1)), output_circles.at<float>(i, j+2), (0, 255, 0), 2);
-			circle(img_out, Point(output_circles.at<float>(i, j), output_circles.at<float>(i, j + 1)), 2, (0, 0, 255), 3);
-		}
-	}
-
-	imshow("detected circles", img_out);
-	waitKey(0);
-
-	/*# draw the outer circle
-	cv2.circle(cimg, (i[0], i[1]), i[2], (0, 255, 0), 2)
-	# draw the center of the circle
-	cv2.circle(cimg, (i[0], i[1]), 2, (0, 0, 255), 3)
-
-	cv2.imshow('detected circles', cimg)
-	cv2.waitKey(0)
-	cv2.destroyAllWindows()*/
-
-}
 
 void convert_clahe(Mat &img_in, Mat &img_out)
 {

@@ -17,4 +17,3 @@ void calcPosterizeGrayscale(Mat &img_in, Mat &img_out, int windowSize);
 void calcPosterizeColor(Mat &img_in, Mat &img_out, int windowSize);
 void delete_sclera_gray(Mat &img_in, Mat &img_out, int threshold);
 void delete_sclera(Mat &img_in, Mat &img_out);
-void hough_something();
