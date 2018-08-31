@@ -2,21 +2,22 @@
 #include "LBP.h"
 #include "hist.h"
 
-coder_LBP* coder_lbp_create() {
+coder_LBP* coder_lbp_create() 
+{
 	coder_LBP* coder = (coder_LBP*) calloc(1, sizeof(coder_LBP));
 	if (coder == NULL) return NULL;
 
-	coder->input = NULL;
-	coder->mask = NULL;
 	coder->output = NULL;
 	coder->histogram = Mat(256, 1, CV_32FC1);
 
 	return coder;
 }
 
-void coder_lbp_encode(coder_LBP* coder) {
-	calc_standard_lbp(coder);
-	//calc_contrast_lbp(coder);
+void coder_lbp_encode(subject* sub, coder_LBP* coder) 
+{
+	coder->output = Mat(sub->input.rows, sub->input.cols, CV_8UC1);
+	calc_standard_lbp(sub, coder);
+	//calc_contrast_lbp(sub, coder);
 }
 
 double coder_lbp_match(coder_LBP* coder1, coder_LBP* coder2)
@@ -26,16 +27,14 @@ double coder_lbp_match(coder_LBP* coder1, coder_LBP* coder2)
 	normalize(coder1->histogram, norm_hist1);
 	normalize(coder2->histogram, norm_hist2);
 
-	cout << norm_hist1;
-	cout << norm_hist2;
-
-	return compareHist(norm_hist1, norm_hist2, CV_COMP_CORREL);
+	//return compareHist(norm_hist1, norm_hist2, CV_COMP_CORREL);
+	return compareHist(norm_hist1, norm_hist2, CV_COMP_CHISQR);
+	//return compareHist(norm_hist1, norm_hist2, CV_COMP_BHATTACHARYYA);
+	//return compareHist(norm_hist1, norm_hist2, CV_COMP_INTERSECT);
 }
 
-void coder_lbp_free(coder_LBP* coder) {
-
-	coder->input.release();
-	coder->mask.release();
+void coder_lbp_free(coder_LBP* coder) 
+{
 	coder->output.release();
 	coder->histogram.release();
 

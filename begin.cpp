@@ -3,6 +3,7 @@
 #include<iostream>
 
 #include "log.h"
+#include "coder.h"
 #include "coder_lbp.h"
 #include "coder_blob.h"
 #include "coder_spatiogram.h"
@@ -14,6 +15,30 @@ using namespace std;
 using namespace cv;
 
 int main() {
+
+	//MAIN MATCHING GENERALE
+	subject* sub1 = subject_create();
+	sub1->input = imread("matching/IMG_006_L_1.iris.norm.png", IMREAD_GRAYSCALE);
+	sub1->mask = imread("matching/IMG_006_L_1.defects.norm.png", IMREAD_GRAYSCALE);
+	code* coder = code_create(sub1);
+
+	subject* sub2 = subject_create();
+	sub2->input = imread("matching/IMG_006_L_1.iris.norm.png", IMREAD_GRAYSCALE);
+	sub2->mask = imread("matching/IMG_006_L_1.defects.norm.png", IMREAD_GRAYSCALE);
+	code* coder2 = code_create(sub2);
+
+	code_init();
+
+	code_encode(coder);
+	code_encode(coder2);
+
+	double result = code_match(coder, coder2);
+	printf("Result: %f\n", result);
+
+	code_free(coder);
+	code_free(coder2);
+
+	cin.get();
 
 	//MAIN DEL MATCHING CON BLOB
 	/*coder_blob* coder = coder_blob_create();
@@ -102,15 +127,15 @@ int main() {
 
 
 	//MAIN DEL MATCHING CON LBP
-	coder_LBP* coder = coder_lbp_create();
+	/*coder_LBP* coder = coder_lbp_create();
 	coder->input = imread("matching/IMG_006_L_1.iris.norm.png",IMREAD_GRAYSCALE);
 	coder->mask = imread("matching/IMG_006_L_1.defects.norm.png", IMREAD_GRAYSCALE);
 	coder->output = Mat(coder->input.rows, coder->input.cols, CV_8UC1);
 	coder_lbp_encode(coder);
 
 	coder_LBP* coder_2 = coder_lbp_create();
-	coder_2->input = imread("matching/IMG_060_L_1.iris.norm.png", IMREAD_GRAYSCALE);
-	coder_2->mask = imread("matching/IMG_060_L_1.defects.norm.png", IMREAD_GRAYSCALE);
+	coder_2->input = imread("matching/IMG_006_L_1.iris.norm.png", IMREAD_GRAYSCALE);
+	coder_2->mask = imread("matching/IMG_006_L_1.defects.norm.png", IMREAD_GRAYSCALE);
 	coder_2->output = Mat(coder->input.rows, coder->input.cols, CV_8UC1);
 	coder_lbp_encode(coder_2);
 
@@ -128,7 +153,7 @@ int main() {
 	coder_lbp_free(coder);
 	coder_lbp_free(coder_2);
 
-	waitKey(0);
+	waitKey(0);*/
 	
 
 	//MAIN DEL CODER DEGLI SPATIOGRAM

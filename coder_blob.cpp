@@ -1,5 +1,6 @@
 #include "log.h"
 #include "coder_blob.h"
+#include "coder.h"
 
 Mat kernel[MAX_NUM_KERNEL];
 int sigma[MAX_NUM_KERNEL] = { 1, 2, 4, 8 };
@@ -9,10 +10,8 @@ coder_blob* coder_blob_create()
 	coder_blob* coder = (coder_blob*)calloc(1, sizeof(coder_blob));
 	if (coder == NULL) return NULL;
 
-	coder->input = NULL;
 	coder->log_bin_merge = NULL;
 	coder->log_merge = NULL;
-	coder->mask = NULL;
 
 	for (int i = 0; i < MAX_NUM_KERNEL; i++) {
 		coder->log_bin_imgs[i] = NULL;
@@ -32,31 +31,31 @@ void coder_blob_init()
 	}
 }
 
-void coder_blob_encode(coder_blob* coder)
+void coder_blob_encode(subject* sub, coder_blob* coder)
 {
 	for (int i = 0; i < MAX_NUM_KERNEL; i++)
 	{
-		coder->log_imgs[i] = Mat(coder->input.rows, coder->input.cols, CV_32FC1);
-		coder->log_bin_imgs[i] = Mat(coder->input.rows, coder->input.cols, CV_8UC1);
+		coder->log_imgs[i] = Mat(sub->input.rows, sub->input.cols, CV_32FC1);
+		coder->log_bin_imgs[i] = Mat(sub->input.rows, sub->input.cols, CV_8UC1);
 		
-		filter2D(coder->input, coder->log_imgs[i], CV_32FC1, kernel[i]);
+		filter2D(sub->input, coder->log_imgs[i], CV_32FC1, kernel[i]);
 
 		coder->log_imgs[i].convertTo(coder->log_imgs[i], -1, sigma[i], 0);
 		binarize_LoG(coder->log_imgs[i], coder->log_bin_imgs[i]);
 	}
 
-	coder->log_merge = Mat(coder->input.rows, coder->input.cols, CV_32FC1);
-	coder->log_bin_merge = Mat(coder->input.rows, coder->input.cols, CV_8UC1);
+	coder->log_merge = Mat(sub->input.rows, sub->input.cols, CV_32FC1);
+	coder->log_bin_merge = Mat(sub->input.rows, sub->input.cols, CV_8UC1);
 
 	merge_LoG(coder->log_imgs, coder->log_merge);
 
 	binarize_LoG(coder->log_merge, coder->log_bin_merge);
 }
 
-double coder_blob_match(coder_blob* coder1, coder_blob* coder2)
+double coder_blob_match(subject* sub1, coder_blob* coder1, subject* sub2, coder_blob* coder2)
 {
-	return shifted_hamming_distance(coder1->log_bin_merge, coder1->mask,
-		coder2->log_bin_merge, coder2->mask, SHIFT);
+	return shifted_hamming_distance(coder1->log_bin_merge, sub1->mask,
+		coder2->log_bin_merge, sub2->mask, SHIFT);
 }
 
 void shift_image(Mat img, Mat shifted_image, int shift)
@@ -105,10 +104,8 @@ double shifted_hamming_distance(Mat img1, Mat mask1, Mat img2, Mat mask2, int sh
 
 void coder_blob_free(coder_blob* coder)
 {
-	coder->input.release();
 	coder->log_bin_merge.release();
 	coder->log_merge.release();
-	coder->mask.release();
 
 	for (int i = 0; i < MAX_NUM_KERNEL; i++) {
 		coder->log_bin_imgs[i].release();

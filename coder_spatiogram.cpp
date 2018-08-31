@@ -1,4 +1,5 @@
 #include "coder_spatiogram.h"
+#include "coder.h"
 
 spatiogram* spatiogram_create()
 {
@@ -22,18 +23,16 @@ coder_spatiogram* coder_spatiogram_create()
 	coder_spatiogram* coder = (coder_spatiogram*)calloc(1, sizeof(coder_spatiogram));
 	if (coder == NULL) return NULL;
 
-	coder->input = NULL;
-	coder->mask = NULL;
 	coder->output = NULL;
 	coder->spatiogram = spatiogram_create();
 	return coder;
 }
 
-void coder_spatiogram_encode(coder_spatiogram* coder) 
+void coder_spatiogram_encode(subject* sub, coder_spatiogram* coder) 
 {
-	for (int i = 0; i < coder->input.rows; i++) {
-		for (int j = 0; j < coder->input.cols; j++) {
-			uchar color = coder->input.at<uchar>(i, j);
+	for (int i = 0; i < sub->input.rows; i++) {
+		for (int j = 0; j < sub->input.cols; j++) {
+			uchar color = sub->input.at<uchar>(i, j);
 			coder->spatiogram->histogram.at<float>(color,0) += 1;
 			coder->spatiogram->mean_vector.at<float>(color,0) += color;
 			coder->spatiogram->covariance_matrix.at<float>(color,0) += powf(color, 2);
@@ -41,11 +40,14 @@ void coder_spatiogram_encode(coder_spatiogram* coder)
 	}
 }
 
+double coder_spatiogram_match(coder_spatiogram* coder1, coder_spatiogram* coder2)
+{
+	return 0.0;
+}
+
 void coder_spatiogram_free(coder_spatiogram* coder) 
 {
 	spatiogram_free(coder->spatiogram);
-	coder->input.release();
-	coder->mask.release();
 	coder->output.release();
 	free(coder);
 }
