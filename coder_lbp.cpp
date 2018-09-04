@@ -2,41 +2,78 @@
 #include "LBP.h"
 #include "hist.h"
 
+// Ragiona su LBP in fasce e su LBP con quello relativo alla varianza!!!!!
+
 coder_LBP* coder_lbp_create() 
 {
 	coder_LBP* coder = (coder_LBP*) calloc(1, sizeof(coder_LBP));
 	if (coder == NULL) return NULL;
 
-	coder->output = NULL;
-	coder->histogram = Mat(256, 1, CV_32FC1);
+	for (int i = 0; i < NUM_ZONE; i++) {
+		coder->input[i] = NULL;
+		coder->mask[i] = NULL;
+		coder->output[i] = NULL;
+		coder->histogram[i] = NULL;
+	}
 
 	return coder;
 }
 
 void coder_lbp_encode(subject* sub, coder_LBP* coder) 
 {
-	coder->output = Mat(sub->input.rows, sub->input.cols, CV_8UC1);
+	int sub_rows = sub->input.rows / NUM_ZONE;
+
+	for (int i = 0; i < NUM_ZONE; i++) {
+		coder->output[i] = Mat::zeros(sub_rows, sub->input.cols, CV_8UC1);
+		coder->histogram[i] = Mat::zeros(256, 1, CV_32FC1);
+
+		coder->input[i] = Mat::zeros(sub_rows, sub->input.cols, CV_8UC1);
+		sub->input(Range(sub_rows*i, sub_rows*(i + 1)), Range(0, sub->input.cols)).copyTo(coder->input[i]);
+		
+		coder->mask[i] = Mat::zeros(sub_rows, sub->input.cols, CV_8UC1);
+		sub->mask(Range(sub_rows*i, sub_rows*(i + 1)), Range(0, sub->mask.cols)).copyTo(coder->mask[i]);
+	}
+
 	calc_standard_lbp(sub, coder);
 	//calc_contrast_lbp(sub, coder);
 }
 
 double coder_lbp_match(coder_LBP* coder1, coder_LBP* coder2)
 {
-	Mat norm_hist1 = Mat(256, 1, CV_32FC1);
-	Mat norm_hist2 = Mat(256, 1, CV_32FC1);
-	normalize(coder1->histogram, norm_hist1);
-	normalize(coder2->histogram, norm_hist2);
+	Mat norm_hist1 = Mat::zeros(256, 1, CV_32FC1);
+	Mat norm_hist2 = Mat::zeros(256, 1, CV_32FC1);
+	double similarity = 0.0;
+	Mat xor_img;
+
+	for (int i = 0; i < NUM_ZONE; i++) {
+		normalize(coder1->histogram[i], norm_hist1);
+		normalize(coder2->histogram[i], norm_hist2);
+
+		similarity += compareHist(norm_hist1, norm_hist2, CV_COMP_CHISQR) *
+			(1.0 - (((2 * coder1->mask[i].rows*coder1->mask[i].cols) -
+			(countNonZero(coder1->mask[i]) + countNonZero(coder2->mask[i]))) / (double)
+				(2 * coder1->mask[i].rows*coder1->mask[i].cols)));
+	}
+
+	return similarity / NUM_ZONE;
+
+	//normalize(coder1->histogram, norm_hist1);
+	//normalize(coder2->histogram, norm_hist2);
 
 	//return compareHist(norm_hist1, norm_hist2, CV_COMP_CORREL);
-	return compareHist(norm_hist1, norm_hist2, CV_COMP_CHISQR);
+	//return compareHist(norm_hist1, norm_hist2, CV_COMP_CHISQR);
 	//return compareHist(norm_hist1, norm_hist2, CV_COMP_BHATTACHARYYA);
 	//return compareHist(norm_hist1, norm_hist2, CV_COMP_INTERSECT);
 }
 
 void coder_lbp_free(coder_LBP* coder) 
 {
-	coder->output.release();
-	coder->histogram.release();
+	for (int i = 0; i < NUM_ZONE; i++) {
+		coder->input[i].release();
+		coder->mask[i].release();
+		coder->output[i].release();
+		coder->histogram[i].release();
+	}
 
 	free(coder);
 }

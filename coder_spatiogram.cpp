@@ -34,8 +34,8 @@ void coder_spatiogram_encode(subject* sub, coder_spatiogram* coder)
 		for (int j = 0; j < sub->input.cols; j++) {
 			uchar color = sub->input.at<uchar>(i, j);
 			coder->spatiogram->histogram.at<float>(color,0) += 1;
-			coder->spatiogram->mean_vector.at<float>(color,0) += color;
-			coder->spatiogram->covariance_matrix.at<float>(color,0) += powf(color, 2);
+			coder->spatiogram->mean_vector.at<float>(color,0) += j;
+			coder->spatiogram->covariance_matrix.at<float>(color,0) += powf(j, 2.0f);
 		}
 	}
 }

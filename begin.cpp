@@ -1,7 +1,6 @@
 #include<opencv2/opencv.hpp>
 #include<opencv/cv.h>
 #include<iostream>
-
 #include "log.h"
 #include "coder.h"
 #include "coder_lbp.h"
@@ -11,13 +10,110 @@
 #include "hist.h"
 #include "preprocessing.h"
 
+#define MAX_LINE 256
+
 using namespace std;
 using namespace cv;
 
 int main() {
+	//Riscrivere tutto in modo che la gallery sia caricata e non ricalcolata ogni volta
+	const char* gallery_file = "gallery_files.txt";
+	//const char* probe_file = "probe_files.txt";
+	const char* probe_file = "single_probe.txt";
+
+	FILE* probe = NULL;
+	FILE* gallery = NULL;
+	FILE* output = NULL;
+
+	output = fopen("output.txt", "w");
+
+	if ((probe = fopen(probe_file, "r")) == NULL || (gallery = fopen(gallery_file, "r")) == NULL) {
+		cout << "Impossibile aprire file di input\n";
+		return EXIT_FAILURE;
+	}
+	
+	//Viene letta la dimensione della Gallery e del Probe
+	char line[MAX_LINE];
+	int gallery_size = atoi(fgets(line, MAX_LINE - 1 , gallery));
+	int probe_size = atoi(fgets(line, MAX_LINE - 1 , probe));
+
+	//Vengono letti e memorizzati i nomi delle immagini che 
+	//costituiscono la Gallery e il Probe.
+	char** probe_names = (char**) calloc(probe_size, sizeof(char*));
+	for (int i = 0; i < probe_size; i++)
+		probe_names[i] = (char*) calloc(MAX_LINE, sizeof(char));
+
+	char** gallery_names = (char**) calloc(gallery_size, sizeof(char*));
+	for (int i = 0; i < gallery_size; i++)
+		gallery_names[i] = (char*) calloc(MAX_LINE, sizeof(char));
+
+	for (int i = 0; i< probe_size; i++)
+		strcpy(probe_names[i], fgets(line, MAX_LINE, probe));
+
+	for (int i = 0; i < gallery_size; i++)
+		strcpy(gallery_names[i], fgets(line, MAX_LINE, gallery));
+
+	fclose(gallery);
+	fclose(probe);
+
+	//Viene inizializzata la matrice dei risultati.
+	//Righe -> Elementi della Gallery.
+	//Colonne -> Elementi del Probe.
+	double ** results = (double**) calloc(probe_size, sizeof(double*));
+	if (results == NULL) return EXIT_FAILURE;
+	for (int i = 0; i < probe_size; i++) {
+		results[i] = (double*)calloc(gallery_size, sizeof(double));
+		if (results[i] == NULL) return EXIT_FAILURE;
+	}
+
+	subject* probe_sub = subject_create();
+	subject* gallery_sub = subject_create();
+
+	code* probe_code = NULL;
+	code* gallery_code = NULL;
+
+	//Codifica e Matching!
+	for (int i = 0; i < probe_size; i++) {
+		printf("SUBJECT: %s\n", probe_names[i]);
+		sprintf(line, "%s.iris.norm.png", strtok(probe_names[i],"\n"));
+		probe_sub->input = imread(line, IMREAD_GRAYSCALE);
+
+		sprintf(line, "%s.defects.norm.png", strtok(probe_names[i], "\n"));
+		probe_sub->mask = imread(line, IMREAD_GRAYSCALE);
+
+		probe_code = code_create(probe_sub);
+		code_init();
+		code_encode(probe_code);
+
+		double min_val = DBL_MAX;
+
+		for (int j = 0; j < gallery_size; j++) {
+			printf("GALLERY: %d\n", j);
+			sprintf(line, "%s.iris.norm.png", strtok(gallery_names[j], "\n"));
+			gallery_sub->input = imread(line, IMREAD_GRAYSCALE);
+
+			sprintf(line, "%s.defects.norm.png", strtok(gallery_names[j], "\n"));
+			gallery_sub->mask = imread(line, IMREAD_GRAYSCALE);
+
+			gallery_code = code_create(gallery_sub);
+			code_encode(gallery_code);
+
+			results[i][j] = code_match(probe_code, gallery_code);
+			min_val = min(min_val, results[i][j]);
+			fprintf(output, "Probe: %s - Gallery: %s -> %f\n", probe_names[i], gallery_names[j], results[i][j]);
+
+			code_free(gallery_code);
+		}
+		fprintf(output, "MATCHING MIGLIORE: %f\n\n", min_val);
+		code_free(probe_code);
+	}
+
+	fclose(output);
+	cin.get();
+
 
 	//MAIN MATCHING GENERALE
-	subject* sub1 = subject_create();
+	/*subject* sub1 = subject_create();
 	sub1->input = imread("matching/IMG_006_L_1.iris.norm.png", IMREAD_GRAYSCALE);
 	sub1->mask = imread("matching/IMG_006_L_1.defects.norm.png", IMREAD_GRAYSCALE);
 	code* coder = code_create(sub1);
@@ -38,7 +134,7 @@ int main() {
 	code_free(coder);
 	code_free(coder2);
 
-	cin.get();
+	cin.get();*/
 
 	//MAIN DEL MATCHING CON BLOB
 	/*coder_blob* coder = coder_blob_create();
@@ -48,7 +144,6 @@ int main() {
 	coder_blob* coder_2 = coder_blob_create();
 	coder_2->input = imread("matching/IMG_060_L_1.iris.norm.png", IMREAD_GRAYSCALE);
 	coder_2->mask = imread("matching/IMG_060_L_1.defects.norm.png", IMREAD_GRAYSCALE);
-
 
 	coder_blob_init();
 
@@ -125,39 +220,42 @@ int main() {
 	cin.get();
 	waitKey(0);*/
 
-
 	//MAIN DEL MATCHING CON LBP
-	/*coder_LBP* coder = coder_lbp_create();
-	coder->input = imread("matching/IMG_006_L_1.iris.norm.png",IMREAD_GRAYSCALE);
-	coder->mask = imread("matching/IMG_006_L_1.defects.norm.png", IMREAD_GRAYSCALE);
-	coder->output = Mat(coder->input.rows, coder->input.cols, CV_8UC1);
-	coder_lbp_encode(coder);
+	/*code_init();
+	subject* sub1 = subject_create();
+	sub1->input = imread("matching/IMG_006_L_1.iris.norm.png", IMREAD_GRAYSCALE);
+	sub1->mask = imread("matching/IMG_006_L_1.defects.norm.png", IMREAD_GRAYSCALE);
 
-	coder_LBP* coder_2 = coder_lbp_create();
-	coder_2->input = imread("matching/IMG_006_L_1.iris.norm.png", IMREAD_GRAYSCALE);
-	coder_2->mask = imread("matching/IMG_006_L_1.defects.norm.png", IMREAD_GRAYSCALE);
-	coder_2->output = Mat(coder->input.rows, coder->input.cols, CV_8UC1);
-	coder_lbp_encode(coder_2);
+	code* coder = code_create(sub1);
+	coder->code_lbp = coder_lbp_create();
+	coder->code_blob = coder_blob_create();
+	code_encode(coder);
 
-	//showHist(coder->histogram);
-	//showHist(coder_2->histogram);
+	subject* sub2 = subject_create();
+	sub2->input = imread("matching/IMG_006_L_1.iris.norm.png", IMREAD_GRAYSCALE);
+	sub2->mask = imread("matching/IMG_006_L_1.defects.norm.png", IMREAD_GRAYSCALE);
 
-	double result = coder_lbp_match(coder, coder_2);
-	//double result = compareHist(coder->histogram, coder_2->histogram, CV_COMP_CHISQR);
+	code* coder2 = code_create(sub2);
+	coder2->code_lbp = coder_lbp_create();
+	coder2->code_blob = coder_blob_create();
+	code_encode(coder2);
+
+	double result = code_match(coder, coder2);
 	printf("Result: %f\n", result);
 
 	namedWindow("MASK", WINDOW_NORMAL);
-	imshow("MASK",coder->output);
-	imwrite("eyes/lbp_coder.png", coder->output);
+	imshow("MASK",coder->code_lbp->output);
+	imwrite("eyes/lbp_coder.png", coder->code_lbp->output);
 
-	coder_lbp_free(coder);
-	coder_lbp_free(coder_2);
+	code_free(coder);
+	code_free(coder2);
 
+	cin.get();
 	waitKey(0);*/
 	
 
 	//MAIN DEL CODER DEGLI SPATIOGRAM
-	/*coder_spatiogram* coder = coder_spatiogram_create();
+	/*subject* sub1 = subject_create();
 	Mat input = Mat(4, 5, CV_8UC1);
 	input.at<uchar>(0, 0) = 0;
 	input.at<uchar>(0, 1) = 1;
@@ -180,24 +278,21 @@ int main() {
 	input.at<uchar>(3, 3) = 3;
 	input.at<uchar>(3, 4) = 5;
 
-	coder->input = input;
-
-	cout << coder->input;
+	sub1->input = input;
+	cout << sub1->input;
 	cout << "\n\n\n";
-
-	//coder->input = imread("006/IMG_006_L_1.iris.norm.png", IMREAD_GRAYSCALE);
-
-	coder_spatiogram_encode(coder);
+	code* coder = code_create(sub1);
+	code_init();
+	code_encode(coder);
 
 	for (int i = 0; i < 10; i++) {
 		printf("%d -> h: %f\t\t mv: %f\t\t cm: %f\t\t\n", i,
-			coder->spatiogram->histogram.at<float>(i,0),
-			coder->spatiogram->mean_vector.at<float>(i, 0), 
-			coder->spatiogram->covariance_matrix.at<float>(i, 0));
+			coder->code_spatiogram->spatiogram->histogram.at<float>(i,0),
+			coder->code_spatiogram->spatiogram->mean_vector.at<float>(i, 0),
+			coder->code_spatiogram->spatiogram->covariance_matrix.at<float>(i, 0));
 	}
 
-	showHist(coder->spatiogram->histogram);
-	coder_spatiogram_free(coder);
+	showHist(coder->code_spatiogram->spatiogram->histogram);
 
 	cin.get();
 	waitKey(0);*/

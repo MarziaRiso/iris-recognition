@@ -7,9 +7,13 @@
 using namespace std;
 using namespace cv;
 
+#define NUM_ZONE 5
+
 struct coder_LBP {
-	Mat output;
-	Mat histogram;
+	Mat input[NUM_ZONE];
+	Mat mask[NUM_ZONE];
+	Mat output[NUM_ZONE];
+	Mat histogram[NUM_ZONE];
 };
 
 coder_LBP* coder_lbp_create();

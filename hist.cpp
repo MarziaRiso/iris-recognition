@@ -1,13 +1,14 @@
 #include "hist.h"
 
 void computeHist(Mat img_in, Mat& histogram) {
-	int histSize = 10; //from 0 to 255
-	float range[] = { 0, 10 }; //the upper boundary is exclusive
+	int histSize = 256; //from 0 to 255
+	float range[] = { 0, 256 }; //the upper boundary is exclusive
 	const float* histRange = { range };
 	calcHist(&img_in, 1, 0, Mat(), histogram, 1, &histSize, &histRange);
 }
 
 void showHist(Mat histogram) {
+	cout << histogram;
 	int hist_w = 512; 
 	int hist_h = 400;
 	int histSize = 256;
@@ -33,5 +34,5 @@ void showHist(Mat histogram) {
 	namedWindow("calcHist Demo", WINDOW_AUTOSIZE);
 	imshow("calcHist Demo", histImage);
 	imwrite("histogram_2.jpg", histImage);
-	//waitKey(0);
+	waitKey(0);
 }
