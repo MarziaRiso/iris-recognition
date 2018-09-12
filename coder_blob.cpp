@@ -31,6 +31,12 @@ void coder_blob_init()
 	}
 }
 
+void coder_blob_load(string subject, coder_blob* coder) {
+	coder->log_bin_merge = imread("dataset/" + subject.substr(9, 3)
+		+ "/blob/" + subject.substr(14) +
+		".log.bin.merge.png", IMREAD_GRAYSCALE);
+}
+
 void coder_blob_encode(subject* sub, coder_blob* coder)
 {
 	for (int i = 0; i < MAX_NUM_KERNEL; i++)

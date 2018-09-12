@@ -9,8 +9,9 @@ using namespace cv;
 
 struct spatiogram {
 	Mat histogram;
-	Mat mean_vector;
-	Mat covariance_matrix;
+	Mat mu;
+	Mat sigma_x;
+	Mat sigma_y;
 };
 
 struct coder_spatiogram {

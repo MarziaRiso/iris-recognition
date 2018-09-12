@@ -1,8 +1,30 @@
 #include "mask.h"
 
+void adjust_mask_single(Mat input, Mat old_mask, Mat new_mask) {
+
+	uchar thresh_black = 180;
+	old_mask.copyTo(new_mask);
+
+	for (int i = 0; i < input.rows; ++i) {
+		for (int j = 0; j < input.cols; ++j) {
+			uchar rgba = input.at<uchar>(i, j);
+			if (old_mask.at<uchar>(i, j) == 255) continue;
+			if (rgba < thresh_black)
+				new_mask.at<uchar>(i, j) = 0; //Se è troppo nero non lo considero
+
+			/*else if (rgba > thresh_white)
+				new_mask.at<uchar>(i, j) = 0;	//Se è troppo bianco non lo considero*/
+
+			else new_mask.at<uchar>(i, j) = 255;
+			//printf("R:%d C:%d -> %d\n", i, j, rgba);
+		}
+	}
+
+}
+
+
 void adjust_mask(Mat input, Mat old_mask, Mat new_mask) {
 
-	//Posso fare lo stesso discorso ma considerando il colore medio dell'iride (?)
 	Vec3i average = (0,0,0);
 	int n_average = 0;
 

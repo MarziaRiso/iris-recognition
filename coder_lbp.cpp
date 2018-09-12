@@ -2,91 +2,75 @@
 #include "LBP.h"
 #include "hist.h"
 
-// Ragiona su LBP in fasce e su LBP con quello relativo alla varianza!!!!!
-
-coder_LBP* coder_lbp_create() 
-{
+coder_LBP* coder_lbp_create() {
 	coder_LBP* coder = (coder_LBP*) calloc(1, sizeof(coder_LBP));
 	if (coder == NULL) return NULL;
 
+	coder->out = NULL;
+
 	for (int i = 0; i < NUM_ZONE; i++) {
-		coder->input[i] = NULL;
-		coder->mask[i] = NULL;
-		coder->output[i] = NULL;
 		coder->histogram[i] = NULL;
 	}
 
 	return coder;
 }
 
-void coder_lbp_encode(subject* sub, coder_LBP* coder) 
-{
-	int sub_rows = sub->input.rows / NUM_ZONE;
+void coder_lbp_load(string subject_name, coder_LBP* coder) {
+	coder->out = imread("dataset/" + subject_name.substr(9, 3)
+		+ "/output/" + subject_name.substr(14) + ".output.png", IMREAD_GRAYSCALE);
 
-	for (int i = 0; i < NUM_ZONE; i++) {
-		coder->output[i] = Mat::zeros(sub_rows, sub->input.cols, CV_8UC1);
-		coder->histogram[i] = Mat::zeros(256, 1, CV_32FC1);
+	int sub_rows = coder->out.rows / NUM_ZONE;
 
-		coder->input[i] = Mat::zeros(sub_rows, sub->input.cols, CV_8UC1);
-		sub->input(Range(sub_rows*i, sub_rows*(i + 1)), Range(0, sub->input.cols)).copyTo(coder->input[i]);
-		
-		coder->mask[i] = Mat::zeros(sub_rows, sub->input.cols, CV_8UC1);
-		sub->mask(Range(sub_rows*i, sub_rows*(i + 1)), Range(0, sub->mask.cols)).copyTo(coder->mask[i]);
+	for (int k = 0; k < NUM_ZONE; k++) {
+		coder->histogram[k] = Mat::zeros(256, 1, CV_32FC1);
+		computeHist(coder->out(Range(sub_rows*k, sub_rows*(k + 1)), Range(0, coder->out.cols)), coder->histogram[k]);
 	}
+}
+
+void coder_lbp_encode(subject* sub, coder_LBP* coder) {
+	coder->out = Mat::zeros(sub->input.size(), CV_8UC1);
+
+	for (int i = 0; i < NUM_ZONE; i++)
+		coder->histogram[i] = Mat::zeros(256, 1, CV_32FC1);
 
 	calc_standard_lbp(sub, coder);
 	//calc_contrast_lbp(sub, coder);
 }
 
-double coder_lbp_match(coder_LBP* coder1, coder_LBP* coder2)
-{
+double coder_lbp_match(subject* sub1, coder_LBP* coder1,subject* sub2, coder_LBP* coder2) {
+
+	int sub_rows = sub1->input.rows / NUM_ZONE;
+
 	Mat norm_hist1 = Mat::zeros(256, 1, CV_32FC1);
 	Mat norm_hist2 = Mat::zeros(256, 1, CV_32FC1);
+	Mat mask1 = Mat::zeros(sub_rows, sub1->input.cols, CV_8UC1);
+	Mat mask2 = Mat::zeros(sub_rows, sub2->input.cols, CV_8UC1);
+
 	double similarity = 0.0;
-	Mat xor_img;
 
 	for (int i = 0; i < NUM_ZONE; i++) {
 		normalize(coder1->histogram[i], norm_hist1);
 		normalize(coder2->histogram[i], norm_hist2);
 
-		similarity += compareHist(norm_hist1, norm_hist2, CV_COMP_CHISQR) *
-			(1.0 - (((2 * coder1->mask[i].rows*coder1->mask[i].cols) -
-			(countNonZero(coder1->mask[i]) + countNonZero(coder2->mask[i]))) / (double)
-				(2 * coder1->mask[i].rows*coder1->mask[i].cols)));
+		sub1->mask(Range(sub_rows*i, sub_rows*(i + 1)), Range(0, sub1->input.cols)).copyTo(mask1);
+		sub2->mask(Range(sub_rows*i, sub_rows*(i + 1)), Range(0, sub2->input.cols)).copyTo(mask2);
+
+		similarity += compareHist(norm_hist1, norm_hist2, CV_COMP_CHISQR)
+			* (1.0 - (((2*mask1.rows*mask1.cols) - (countNonZero(mask1) + countNonZero(mask2))) 
+				/ (double)(2 * mask1.rows*mask1.cols)));
 	}
 
 	return similarity / NUM_ZONE;
-
-	//normalize(coder1->histogram, norm_hist1);
-	//normalize(coder2->histogram, norm_hist2);
-
-	//return compareHist(norm_hist1, norm_hist2, CV_COMP_CORREL);
-	//return compareHist(norm_hist1, norm_hist2, CV_COMP_CHISQR);
-	//return compareHist(norm_hist1, norm_hist2, CV_COMP_BHATTACHARYYA);
-	//return compareHist(norm_hist1, norm_hist2, CV_COMP_INTERSECT);
 }
 
-void coder_lbp_free(coder_LBP* coder) 
-{
+void coder_lbp_free(coder_LBP* coder) {
+	coder->out.release();
 	for (int i = 0; i < NUM_ZONE; i++) {
-		coder->input[i].release();
-		coder->mask[i].release();
-		coder->output[i].release();
 		coder->histogram[i].release();
 	}
 
 	free(coder);
 }
-
-
-
-
-
-
-
-
-
-
 
 //int main() {
 //	Mat img = imread("green.jpg");
