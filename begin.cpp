@@ -397,7 +397,7 @@ int main()
 	input.at<Vec3b>(2, 2) = Vec3b(6,6,6);
 	input.at<Vec3b>(2, 3) = Vec3b(8,8,8);*/
 
-	Mat input1 = Mat(3, 4, CV_8UC1);
+	/*Mat input1 = Mat(3, 4, CV_8UC1);
 	input1.at<uchar>(0, 0) = 7;
 	input1.at<uchar>(0, 1) = 2;
 	input1.at<uchar>(0, 2) = 5;
@@ -451,22 +451,36 @@ int main()
 	mask2.at<uchar>(2, 0) = 0;
 	mask2.at<uchar>(2, 1) = 0;
 	mask2.at<uchar>(2, 2) = 0;
-	mask2.at<uchar>(2, 3) = 1;
+	mask2.at<uchar>(2, 3) = 1;*/
 
-	/*Mat input1 = imread("prove/matching/IMG_006_L_1.iris.norm.png", IMREAD_GRAYSCALE);
-	Mat mask1 = imread("prove/matching/IMG_006_L_1.defects.norm.png", IMREAD_GRAYSCALE);
+	/*Mat input1 = imread("prove/matching/IMG_060_L_1.iris.norm.png", IMREAD_GRAYSCALE);
+	Mat mask1 = imread("prove/matching/IMG_060_L_1.defects.norm.png", IMREAD_GRAYSCALE);*/
 
-	Mat input2 = imread("prove/matching/IMG_060_L_1.iris.norm.png", IMREAD_GRAYSCALE);
+	/*Mat input2 = imread("prove/matching/IMG_060_L_1.iris.norm.png", IMREAD_GRAYSCALE);
 	Mat mask2 = imread("prove/matching/IMG_060_L_1.defects.norm.png", IMREAD_GRAYSCALE);*/
 
-	spatiogram* spatio1 = spatiogram_create();
-	spatiogram* spatio2 = spatiogram_create();
-	create_spatiogram(input1, mask1, spatio1);
-	create_spatiogram(input2, mask2, spatio2);
+	/*subject* sub1 = subject_create();
+	sub1->input = imread("prove/matching/IMG_060_L_1.iris.norm.png", IMREAD_GRAYSCALE);
+	sub1->mask = imread("prove/matching/IMG_060_L_1.defects.norm.png", IMREAD_GRAYSCALE);
+
+	subject* sub2 = subject_create();
+	sub2->input = imread("prove/matching/IMG_006_L_1.iris.norm.png", IMREAD_GRAYSCALE);
+	sub2->mask = imread("prove/matching/IMG_006_L_1.defects.norm.png", IMREAD_GRAYSCALE);
+
+	code* coder1 = code_create(sub1);
+	code* coder2 = code_create(sub2);
+
+	code_encode(coder1);
+	code_encode(coder2);
+
+	cout << code_match(coder1, coder2);*/
+
+	//create_spatiogram(input1, mask1, spatio1);
+	//create_spatiogram(input2, mask2, spatio2);
 
 	//match_spatiogram(spatio1, spatio2);
-	cout << match_spatiogram(spatio1, spatio2);
-	cin.get();
+	//cout << match_spatiogram(spatio1, spatio2);
+	//cin.get();
 
 
 	/*Mat img = imread("prove/matching/IMG_006_L_1.iris.norm.png", IMREAD_GRAYSCALE);
@@ -538,7 +552,7 @@ int main()
 
 
 	///MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN
-	/*clock_t start, end;
+	clock_t start, end;
 	double tempo;
 	start = clock();
 
@@ -590,10 +604,9 @@ int main()
 	for (int t = 0; t < NUM_THREADS; t++)
 		thds[t].join();
 
-
 	//Stampa dei risultati
 	ofstream output;
-	output.open("results_BLOB.csv");
+	output.open("results_SPATIOGRAM.csv");
 
 	string firstrow = " ;";
 	for (int i = 0; i < gallery_names.size(); i++)

@@ -1,8 +1,7 @@
 #include "coder_spatiogram.h"
 #include "coder.h"
-#include <math.h>
 
-#define _USE_MATH_DEFINES
+#define PI 3.1415
 
 spatiogram* spatiogram_create()
 {
@@ -88,7 +87,7 @@ void coder_spatiogram_encode(subject* sub, coder_spatiogram* coder)
 	Mat kdist = Mat::ones(ys, xs, CV_32FC1) / (xs*ys);
 	for (int i = 0; i < kdist.rows; i++) {
 		for (int j = 0; j < kdist.cols; j++) {
-			kdist.at<float>(i, j) *= sub->mask.at<double>(i, j);
+			kdist.at<float>(i, j) *= sub->mask.at<uchar>(i, j);
 		}
 	}
 
@@ -157,7 +156,89 @@ void coder_spatiogram_encode(subject* sub, coder_spatiogram* coder)
 
 double coder_spatiogram_match(coder_spatiogram* coder1, coder_spatiogram* coder2)
 {
-	return 0.0;
+	Mat qx = Mat::zeros(coder1->spatiogram->sigma_x.size(), CV_64FC1);
+	Mat qy = Mat::zeros(coder1->spatiogram->sigma_x.size(), CV_64FC1);
+	Mat q = Mat::zeros(coder1->spatiogram->sigma_x.size(), CV_64FC1);
+
+	double C = 2 * sqrt(2 * PI);
+	double C2 = 1 / (2 * PI);
+
+	for (int i = 0; i < coder1->spatiogram->sigma_x.rows; i++) {
+		qx.at<double>(i) = coder1->spatiogram->sigma_x.at<double>(i) + coder2->spatiogram->sigma_x.at<double>(i);
+		qy.at<double>(i) = coder1->spatiogram->sigma_y.at<double>(i) + coder2->spatiogram->sigma_y.at<double>(i);
+
+		q.at<double>(i) = C * pow((qx.at<double>(i) * qy.at<double>(i)), 1 / 4.0);
+	}
+
+	Mat sigmai_x = Mat::zeros(coder1->spatiogram->sigma_x.size(), CV_64FC1);
+	Mat sigmai_y = Mat::zeros(coder1->spatiogram->sigma_x.size(), CV_64FC1);
+
+	for (int i = 0; i < coder2->spatiogram->sigma_x.rows; i++) {
+		sigmai_x.at<double>(i) = 1.0 / (1.0 / (coder1->spatiogram->sigma_x.at<double>(i)
+			+ (coder1->spatiogram->sigma_x.at<double>(i) == 0)) + 1.0 /
+			(coder2->spatiogram->sigma_x.at<double>(i) + (coder2->spatiogram->sigma_x.at<double>(i) == 0)));
+
+		sigmai_y.at<double>(i) = 1.0 / (1.0 / (coder1->spatiogram->sigma_y.at<double>(i)
+			+ (coder1->spatiogram->sigma_y.at<double>(i) == 0)) + 1.0 /
+			(coder2->spatiogram->sigma_y.at<double>(i) + (coder2->spatiogram->sigma_y.at<double>(i) == 0)));
+	}
+
+	Mat Q = Mat::zeros(coder1->spatiogram->sigma_x.size(), CV_64FC1);
+	for (int i = 0; i < coder1->spatiogram->sigma_x.rows; i++) {
+		Q.at<double>(i) = C * pow(sigmai_x.at<double>(i)*sigmai_y.at<double>(i), 1 / 4.0);
+	}
+
+	Mat x = Mat::zeros(coder1->spatiogram->mu.rows, 1, CV_64FC1);
+	Mat y = Mat::zeros(coder1->spatiogram->mu.rows, 1, CV_64FC1);
+
+	for (int i = 0; i < coder1->spatiogram->mu.rows; i++) {
+		x.at<double>(i) = coder1->spatiogram->mu.at<double>(i, 0) - coder2->spatiogram->mu.at<double>(i, 0);
+		y.at<double>(i) = coder1->spatiogram->mu.at<double>(i, 1) - coder2->spatiogram->mu.at<double>(i, 1);
+	}
+
+	for (int i = 0; i < qx.rows; i++) {
+		//uso qx e qy come i sigmax del codice originale
+		qx.at<double>(i) *= 2.0;
+		qy.at<double>(i) *= 2.0;
+	}
+
+	Mat isigma_x = Mat::zeros(coder1->spatiogram->sigma_x.size(), CV_64FC1);
+	Mat isigma_y = Mat::zeros(coder1->spatiogram->sigma_x.size(), CV_64FC1);
+	for (int i = 0; i < qx.rows; i++) {
+		isigma_x.at<double>(i) = 1.0 / (qx.at<double>(i) + (qx.at<double>(i) == 0));
+		isigma_y.at<double>(i) = 1.0 / (qy.at<double>(i) + (qy.at<double>(i) == 0));
+	}
+
+	Mat detsigmax = Mat::zeros(coder1->spatiogram->sigma_x.size(), CV_64FC1);
+	for (int i = 0; i < qx.rows; i++) {
+		detsigmax.at<double>(i) = qx.at<double>(i) * qy.at<double>(i);
+	}
+
+	Mat z = Mat::zeros(isigma_x.size(), CV_64FC1);
+	for (int i = 0; i < z.rows; i++) {
+		z.at<double>(i) = C2 / sqrt(detsigmax.at<double>(i))*exp(-0.5 *
+			(isigma_x.at<double>(i) *pow(x.at<double>(i), 2.0) +
+				isigma_y.at<double>(i) *pow(y.at<double>(i), 2.0)));
+	}
+
+	Mat dist = Mat::zeros(z.size(), CV_64FC1);
+	for (int i = 0; i < z.rows; i++) {
+		dist.at<double>(i) = q.at<double>(i)*Q.at<double>(i)*z.at<double>(i);
+	}
+
+	Mat s = Mat::zeros(coder1->spatiogram->histogram.size(), CV_64FC1);
+	for (int i = 0; i < coder1->spatiogram->histogram.rows; i++) {
+		s.at<double>(i) = sqrt(coder1->spatiogram->histogram.at<double>(i))*
+			sqrt(coder2->spatiogram->histogram.at<double>(i))*
+			dist.at<double>(i);
+	}
+
+	double sum_s = 0.0;
+	for (int i = 0; i < s.rows; i++) {
+		sum_s += isnan(s.at<double>(i)) ? 0 : s.at<double>(i);
+	}
+
+	return sum_s;
 }
 
 void coder_spatiogram_free(coder_spatiogram* coder) 
