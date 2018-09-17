@@ -55,7 +55,7 @@ double coder_lbp_match(subject* sub1, coder_LBP* coder1,subject* sub2, coder_LBP
 		sub1->mask(Range(sub_rows*i, sub_rows*(i + 1)), Range(0, sub1->input.cols)).copyTo(mask1);
 		sub2->mask(Range(sub_rows*i, sub_rows*(i + 1)), Range(0, sub2->input.cols)).copyTo(mask2);
 
-		similarity += compareHist(norm_hist1, norm_hist2, CV_COMP_CHISQR)
+		similarity += compareHist(norm_hist1, norm_hist2, CV_COMP_BHATTACHARYYA)
 			* (1.0 - (((2*mask1.rows*mask1.cols) - (countNonZero(mask1) + countNonZero(mask2))) 
 				/ (double)(2 * mask1.rows*mask1.cols)));
 	}

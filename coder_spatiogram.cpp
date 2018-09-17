@@ -3,20 +3,13 @@
 
 #define PI 3.1415
 
-spatiogram* spatiogram_create()
-{
+spatiogram* spatiogram_create() {
 	spatiogram* spatio = (spatiogram*)calloc(1, sizeof(spatiogram));
 	spatio->histogram = Mat::zeros(256, 1, CV_64FC1);
 	spatio->mu = Mat::zeros(256, 2, CV_64FC1);
 	spatio->sigma_x = Mat::zeros(256, 1, CV_64FC1);
 	spatio->sigma_y = Mat::zeros(256, 1, CV_64FC1);
 	return spatio;
-
-	/*spatiogram* spatio = (spatiogram*)calloc(1, sizeof(spatiogram));
-	spatio->histogram = Mat::zeros(256, 1, CV_32FC1);
-	spatio->mean_vector = Mat::zeros(256, 1, CV_32FC1);
-	spatio->covariance_matrix = Mat::zeros(256, 1, CV_32FC1);
-	return spatio;*/
 }
 
 void spatiogram_free(spatiogram* spatio)
@@ -74,7 +67,6 @@ void coder_spatiogram_encode(subject* sub, coder_spatiogram* coder)
 			value += xf;
 		}
 	}
-
 	Mat grid_y = Mat::zeros(binno.size(), CV_32FC1);
 	for (int j = 0; j < binno.cols; j++) {
 		float value = -1;
@@ -87,7 +79,7 @@ void coder_spatiogram_encode(subject* sub, coder_spatiogram* coder)
 	Mat kdist = Mat::ones(ys, xs, CV_32FC1) / (xs*ys);
 	for (int i = 0; i < kdist.rows; i++) {
 		for (int j = 0; j < kdist.cols; j++) {
-			kdist.at<float>(i, j) *= sub->mask.at<uchar>(i, j);
+			kdist.at<float>(i, j) *= (double)sub->mask.at<uchar>(i, j);
 		}
 	}
 
@@ -102,55 +94,56 @@ void coder_spatiogram_encode(subject* sub, coder_spatiogram* coder)
 	double min_mk;
 	minMaxLoc(kdist, &min_mk);
 
-	Mat histogram = Mat::zeros(f, 1, CV_64FC1);
 	Mat wsum = Mat::zeros(f, 1, CV_64FC1);
-	Mat mu = Mat::zeros(f, 2, CV_64FC1);
-
-	Mat sigma_x = Mat::zeros(f, 1, CV_64FC1);
-	Mat sigma_y = Mat::zeros(f, 1, CV_64FC1);
 
 	//Funzione accumarray
 	for (int j = 0; j < binno.cols; j++) {
 		for (int i = 0; i < binno.rows; i++) {
-			histogram.at<double>((int)binno.at<float>(i, j)) += kdist.at<float>(i, j);
+			coder->spatiogram->histogram.at<double>((int)binno.at<float>(i, j)) += kdist.at<float>(i, j);
 			wsum.at<double>((int)binno.at<float>(i, j)) += kdist.at<float>(i, j);
 		}
 	}
+
+	//cout << histogram << endl;
 
 	for (int i = 0; i < wsum.rows; i++) {
 		if (wsum.at<double>(i) == 0.0) wsum.at<double>(i) = 1.0;
 	}
 
+	//cout << wsum << endl;
+
 	//// Creazione del mean vector
 	for (int j = 0; j < binno.cols; j++) {
 		for (int i = 0; i < binno.rows; i++) {
-			mu.at<double>((int)binno.at<float>(i, j), 0) += grid_x.at<float>(i, j)*kdist.at<float>(i, j);
-			mu.at<double>((int)binno.at<float>(i, j), 1) += grid_y.at<float>(i, j)*kdist.at<float>(i, j);
+			coder->spatiogram->mu.at<double>((int)binno.at<float>(i, j), 0) += grid_x.at<float>(i, j)*kdist.at<float>(i, j);
+			coder->spatiogram->mu.at<double>((int)binno.at<float>(i, j), 1) += grid_y.at<float>(i, j)*kdist.at<float>(i, j);
 		}
 	}
+
+	//cout << mu;
 
 	//// Creazione delle matrici di covarianza
 	for (int j = 0; j < binno.cols; j++) {
 		for (int i = 0; i < binno.rows; i++) {
-			sigma_x.at<double>((int)binno.at<float>(i, j)) += pow(grid_x.at<float>(i, j), 2.0)*kdist.at<float>(i, j);
-			sigma_y.at<double>((int)binno.at<float>(i, j)) += pow(grid_y.at<float>(i, j), 2.0)*kdist.at<float>(i, j);
+			coder->spatiogram->sigma_x.at<double>((int)binno.at<float>(i, j)) += pow(grid_x.at<float>(i, j), 2.0)*kdist.at<float>(i, j);
+			coder->spatiogram->sigma_y.at<double>((int)binno.at<float>(i, j)) += pow(grid_y.at<float>(i, j), 2.0)*kdist.at<float>(i, j);
 		}
 	}
 
-	for (int i = 0; i < sigma_x.rows; i++) {
-		sigma_x.at<double>(i) /= wsum.at<double>(i);
-		sigma_x.at<double>(i) -= pow(mu.at<double>(i, 0) / wsum.at<double>(i), 2.0);
-		sigma_x.at<double>(i) += (min_mk - sigma_x.at<double>(i))*(sigma_x.at<double>(i)<min_mk);
+	for (int i = 0; i < coder->spatiogram->sigma_x.rows; i++) {
+		coder->spatiogram->sigma_x.at<double>(i) /= wsum.at<double>(i);
+		coder->spatiogram->sigma_x.at<double>(i) -= pow(coder->spatiogram->mu.at<double>(i, 0) / wsum.at<double>(i), 2.0);
+		coder->spatiogram->sigma_x.at<double>(i) += (min_mk - coder->spatiogram->sigma_x.at<double>(i))*(coder->spatiogram->sigma_x.at<double>(i)<min_mk);
 
-		sigma_y.at<double>(i) /= wsum.at<double>(i);
-		sigma_y.at<double>(i) -= pow(mu.at<double>(i, 1) / wsum.at<double>(i), 2.0);
-		sigma_y.at<double>(i) += (min_mk - sigma_y.at<double>(i))*(sigma_y.at<double>(i)<min_mk);
+		coder->spatiogram->sigma_y.at<double>(i) /= wsum.at<double>(i);
+		coder->spatiogram->sigma_y.at<double>(i) -= pow(coder->spatiogram->mu.at<double>(i, 1) / wsum.at<double>(i), 2.0);
+		coder->spatiogram->sigma_y.at<double>(i) += (min_mk - coder->spatiogram->sigma_y.at<double>(i))*(coder->spatiogram->sigma_y.at<double>(i)<min_mk);
 	}
 
 	////Normalizzazione del mean vector
-	for (int i = 0; i < mu.rows; i++) {
-		mu.at<double>(i, 0) /= wsum.at<double>(i);
-		mu.at<double>(i, 1) /= wsum.at<double>(i);
+	for (int i = 0; i < coder->spatiogram->mu.rows; i++) {
+		coder->spatiogram->mu.at<double>(i, 0) /= wsum.at<double>(i);
+		coder->spatiogram->mu.at<double>(i, 1) /= wsum.at<double>(i);
 	}
 }
 

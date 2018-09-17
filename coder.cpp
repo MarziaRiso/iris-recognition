@@ -5,8 +5,8 @@ code* code_create(subject* eye) {
 	if (coder == NULL) return NULL;
 
 	coder->eye = eye;
-	coder->code_lbp = coder_lbp_create();
-	coder->code_blob = coder_blob_create();
+	//coder->code_lbp = coder_lbp_create();
+	//coder->code_blob = coder_blob_create();
 	coder->code_spatiogram = coder_spatiogram_create();
 
 	return coder;
@@ -32,8 +32,8 @@ double code_match(code* coder1, code* coder2) {
 }
 
 void code_free(code* coder) {
-	coder_lbp_free(coder->code_lbp);
-	coder_blob_free(coder->code_blob);
-	//coder_spatiogram_free(coder->code_spatiogram);
+	//coder_lbp_free(coder->code_lbp);
+	//coder_blob_free(coder->code_blob);
+	coder_spatiogram_free(coder->code_spatiogram);
 	free(coder);
 }

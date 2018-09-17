@@ -26,11 +26,22 @@ vector<string> probe_names;
 vector<string> gallery_names;
 Mat results;
 
+std::vector<std::string> string_split(const std::string& s, char delimiter)
+{
+	std::vector<std::string> tokens;
+	std::string token;
+	std::istringstream tokenStream(s);
+	while (std::getline(tokenStream, token, delimiter)) {
+		tokens.push_back(token);
+	}
+	return tokens;
+}
+
 void create_file()
 {
-	const char* gallery_file = "galleria.txt";
-	const char* probe_file = "probe_final.txt";
-	const char* output_file = "probe_probe.txt";
+	const char* gallery_file = "gallery_file1.txt";
+	const char* probe_file = "probe_file1.txt";
+	const char* output_file = "probe_final.txt";
 
 	FILE* gallery = fopen(probe_file, "r");
 	FILE* output = fopen(output_file, "w");
@@ -41,9 +52,10 @@ void create_file()
 
 	for (int i = 0; i < gallery_size; i++) {
 		file = string(fgets(line, MAX_LINE - 1, gallery));
+		std::cout << file;
 		if (i % 2 != 0) continue;
-			/*fprintf(output,"%s\n", ("gallery\\\\" + file.substr(4, 3) + 
-				"\\\\" + file.substr(0, 11)).c_str());*/
+			//fprintf(output,"%s\n", ("gallery\\\\" + file.substr(4, 3) + 
+			//	"\\\\" + file.substr(0, 11)).c_str());
 			std::fprintf(output, "%s\n", ("probe\\\\" + file.substr(0, 11)).c_str());
 	}
 
@@ -51,7 +63,7 @@ void create_file()
 
 void create_gallery()
 {
-	const char* gallery_file = "gallery_files.txt";
+	const char* gallery_file = "gallery_final.txt";
 	FILE* gallery = fopen(gallery_file, "r");
 
 	char line[MAX_LINE];
@@ -77,30 +89,76 @@ void create_gallery()
 		imwrite("dataset/" + gallery_names.at(i).substr(9, 3)
 			+ "/output/" + gallery_names.at(i).substr(14) + ".output.png", gallery_code->code_lbp->out);
 
-		/*imwrite("dataset/" + gallery_names.at(i).substr(9, 3)
-		+ "/blob/" + gallery_names.at(i).substr(14) +
-		".log.bin.merge.png", gallery_code->code_blob->log_bin_merge);*/
-
-		/*for (int k = 0; k < NUM_ZONE; k++) 
-		{
-			/*imwrite("dataset/" + gallery_names.at(i).substr(9, 3)
-				+ "/mask/" + gallery_names.at(i).substr(14) + "_" +
-				to_string(k) + ".mask.png", gallery_code->code_lbp->mask[k]);
-
-			imwrite("dataset/" + gallery_names.at(i).substr(9, 3)
-				+ "/output/" + gallery_names.at(i).substr(14) + "_" +
-				to_string(k) +	".output.png", gallery_code->code_lbp->output[k]);
-		}
-
 		imwrite("dataset/" + gallery_names.at(i).substr(9, 3)
-			+ "/blob/" + gallery_names.at(i).substr(14) + 
-			".log.bin.merge.png", gallery_code->code_blob->log_bin_merge);*/
+		+ "/blob/" + gallery_names.at(i).substr(14) +
+		".log.bin.merge.png", gallery_code->code_blob->log_bin_merge);
+
 		code_free(gallery_code);
 	}
 
 	std::cin.get();
 }
 
+vector<string> load_matrix(const string path) {
+	ifstream input;
+	input.open(path);
+
+	string line;
+	getline(input, line); // scarto la riga con tutte i nomi delle immagini della gallery
+	vector<string> gallery_codes = string_split(line, ';');
+	gallery_codes.erase(gallery_codes.begin());
+
+	for (int i = 0; i < results.rows; i++) {
+		for (int j = 0; j < results.cols; j++) {
+			if (j == 0) getline(input, line, ';');
+			getline(input, line, ';');
+			results.at<double>(i, j) = stod(line);
+		}
+	}
+
+	input.close();
+	return gallery_codes;
+}
+
+void rearrange_matrix(const string path) {
+	ifstream input;
+	input.open(path);
+
+	string line;
+	getline(input, line); // scarto la riga con tutte i nomi delle immagini della gallery
+
+	//Carico la matrice come è stata calcolata e la metto in results
+	for (int i = 0; i < results.rows; i++) {
+		for (int j = 0; j < results.cols; j++) {
+			if (j == 0) getline(input, line, ';');
+			getline(input, line, ';');
+			results.at<double>(i, j) = stod(line);
+		}
+	}
+
+	//Calcolo la nuova matrice e la metto nel file
+	ofstream output;
+	output.open("results_BLOB_MATCHING.csv");
+	string firstrow = " ;";
+	for (int i = 0; i < results.rows; i++) {
+		double min_subject = 0.0;
+		string row = probe_names[i] + ";";
+		for (int j = 0; j < results.cols; j++) {
+			if (j == 0) min_subject = results.at<double>(i, j);
+			else if (gallery_names[j].substr(18, 5).compare(gallery_names[j - 1].substr(18, 5)) == 0) {
+				min_subject = (results.at<double>(i, j) < min_subject) ? results.at<double>(i, j) : min_subject;
+			} else {
+				firstrow += to_string(j-1) + ";";
+				row += to_string(min_subject) + ";";
+				min_subject = results.at<double>(i, j);
+			}
+			results.at<double>(i, j) = stod(line);
+		}
+		if (i == 0) output << firstrow << endl;
+		output << row << endl;
+	}
+	input.close();
+}
 
 void thread_code(int start, int end) {
 	subject* probe_sub = subject_create();
@@ -130,10 +188,12 @@ void thread_code(int start, int end) {
 
 			gallery_code = code_create(gallery_sub);
 
-			coder_lbp_load(gallery_names[j], gallery_code->code_lbp);
-			coder_blob_load(gallery_names[j], gallery_code->code_blob);
+			//coder_lbp_load(gallery_names[j], gallery_code->code_lbp);
+			//coder_blob_load(gallery_names[j], gallery_code->code_blob);
+			code_encode(gallery_code);
 
-			results.at<double>(i, j) = code_match(probe_code, gallery_code);
+			results.at<double>(i, j) = 1.0-code_match(probe_code, gallery_code);
+			//cout << probe_names[i] + " " + gallery_names[j] + to_string(1.0-results.at<double>(i, j)) +"\n" << endl;
 
 			//std::cout << "	" + gallery_names[j] + " -> " + to_string(results.at<float>(i, j)) << endl;
 
@@ -162,227 +222,90 @@ void thread_code(int start, int end) {
 	}
 }
 
-void create_spatiogram(Mat input, Mat mask,spatiogram* spatio) 
+int main()
 {
-	int z = input.channels();
-	int xs = input.cols;
-	int ys = input.rows;
-	int bins = 256;
+	const char* gallery_file = "gallery_final.txt";
+	const char* probe_file = "probe_final.txt";
 
-	Mat binno = Mat::zeros(input.size(), CV_32FC1);
-	Mat channels[3];
-	Mat new_channel;
+	FILE* probe = NULL;
+	FILE* gallery = NULL;
 
-	split(input, channels);
+	if ((probe = fopen(probe_file, "r")) == NULL ||
+		(gallery = fopen(gallery_file, "r")) == NULL) {
+		std::cout << "Impossibile aprire file di input\n";
+		return EXIT_FAILURE;
+	}
 
-	int f = 1;
-	for (int k = 0; k < z; k++)
-	{
-		new_channel = Mat::zeros(channels[k].size(), CV_32FC1);
-		for (int i = 0; i < new_channel.rows; i++) {
-			for (int j = 0; j < new_channel.cols; j++) {
-				binno.at<float>(i,j) += (float)(f*floor(channels[k].at<uchar>(i, j) * bins / 256));
+	//Viene letta la dimensione della Gallery e del Probe
+	char line[MAX_LINE];
+	int gallery_size = atoi(fgets(line, MAX_LINE - 1, gallery));
+	int probe_size = atoi(fgets(line, MAX_LINE - 1, probe));
+
+	int gallery_single_size = 153;
+
+	//Vengono letti e memorizzati i nomi delle immagini che 
+	//costituiscono la Gallery e il Probe.
+	for (int i = 0; i < probe_size; i++)
+		probe_names.push_back(string(strtok(fgets(line, MAX_LINE - 1, probe), "\n")));
+
+	for (int i = 0; i < gallery_size; i++)
+		gallery_names.push_back(string(strtok(fgets(line, MAX_LINE - 1, gallery), "\n")));
+
+	//fclose(gallery);
+	//fclose(probe);
+
+	results = Mat::zeros(probe_size, gallery_size, CV_64FC1);
+	rearrange_matrix("results_BLOB3.0.csv");
+
+	results = Mat::zeros(probe_size, gallery_single_size, CV_64FC1);
+	vector<string> gallery_codes = load_matrix("results_BLOB_MATCHING.csv");
+
+	cout << gallery_codes.size();
+
+	//cout << results;
+	cin.get();
+
+	//double thresh=0.5;
+	for (double thresh = 0.0; thresh <= 1.0; thresh += 0.1) {
+		int TP = 0;
+		int TN = 0;
+		int FP = 0;
+		int FN = 0;
+
+		for (int i = 0; i < probe_size; i++) {
+			for (int j = 0; j < gallery_single_size; j++) {
+				if (results.at<double>(i, j) <= thresh) {
+					if (gallery_names[stoi(gallery_codes.at(j))].substr(18, 5).compare(probe_names[i].substr(11, 5)) == 0) {
+						TP++;
+					} else {
+						FP++;
+					}
+				} else {
+					if (gallery_names[stoi(gallery_codes.at(j))].substr(18, 5).compare(probe_names[i].substr(11, 5)) == 0) {
+						FN++;
+					} else {
+						TN++;
+					}
+				}
 			}
 		}
-		f *= bins;
+
+		std::cout << "Thresh utilizzata: " + to_string(thresh) << endl;
+		std::cout << "Total: " + to_string(gallery_single_size*probe_size) << endl;
+		std::cout << "True positive: " + to_string(TP) << endl;
+		std::cout << "True negative: " + to_string(TN) << endl;
+		std::cout << "False positive: " + to_string(FP) << endl;
+		std::cout << "False negative: " + to_string(FN) << endl;
+		std::cout << endl;
+		std::cout << "FAR: " + to_string((double)FP / (FP + TN)) << endl;
+		std::cout << "FRR: " + to_string((double)FN / (TP + FN)) << endl;
+		std::cout << "GAR: " + to_string(1.0 - (double)FN / (TP + FN)) << endl;
+		std::cout << "\n\n\n";
+		std::cin.get();
 	}
 
-	float xf = 2.0f / (xs - 1);
-	float yf = 2.0f / (ys - 1);
+	//rearrange_matrix("results_LBP3.0.csv");
 
-	Mat grid_x = Mat::zeros(binno.size(), CV_32FC1);
-	for (int i = 0; i < binno.rows; i++) {
-		float value = -1;
-		for (int j = 0; j < binno.cols; j++) {
-			grid_x.at<float>(i, j) = value;
-			value += xf;
-		}
-	}
-	Mat grid_y = Mat::zeros(binno.size(), CV_32FC1);
-	for (int j = 0; j < binno.cols; j++) {
-		float value = -1;
-		for (int i = 0; i < binno.rows; i++) {
-			grid_y.at<float>(i, j) = value;
-			value += yf;
-		}
-	}
-
-	//cout << grid_y << endl;
-
-
-	Mat kdist = Mat::ones(ys, xs, CV_32FC1) / (xs*ys);
-	for (int i = 0; i < kdist.rows; i++) {
-		for (int j = 0; j < kdist.cols; j++) {
-			kdist.at<float>(i, j) *= (double)mask.at<uchar>(i,j);
-		}
-	}	
-
-	float value_sum = sum(kdist)[0];
-
-	for (int i = 0; i < kdist.rows; i++) {
-		for (int j = 0; j < kdist.cols; j++) {
-			kdist.at<float>(i, j) /= value_sum;
-		}
-	}
-
-	double min_mk;
-	minMaxLoc(kdist,&min_mk);
-
-	Mat wsum = Mat::zeros(f, 1, CV_64FC1);
-
-	cout << "Immagine in corso\n";
-
-	//Funzione accumarray
-	for (int j = 0; j < binno.cols; j++) {
-		for (int i = 0; i < binno.rows; i++) {
-			spatio->histogram.at<double>((int) binno.at<float>(i, j)) += kdist.at<float>(i,j);
-			wsum.at<double>((int)binno.at<float>(i, j)) += kdist.at<float>(i, j);
-		}
-	}
-
-	//cout << histogram << endl;
-
-	for (int i = 0; i < wsum.rows; i++) {
-		if (wsum.at<double>(i) == 0.0) wsum.at<double>(i) = 1.0;
-	}
-
-	//cout << wsum << endl;
-
-	//// Creazione del mean vector
-	for (int j = 0; j < binno.cols; j++) {
-		for (int i = 0; i < binno.rows; i++) {
-			spatio->mu.at<double>((int)binno.at<float>(i, j),0) += grid_x.at<float>(i,j)*kdist.at<float>(i, j);
-			spatio->mu.at<double>((int)binno.at<float>(i, j),1) += grid_y.at<float>(i, j)*kdist.at<float>(i, j);
-		}
-	}
-
-	//cout << mu;
-
-	//// Creazione delle matrici di covarianza
-	for (int j = 0; j < binno.cols; j++) {
-		for (int i = 0; i < binno.rows; i++) {
-			spatio->sigma_x.at<double>((int)binno.at<float>(i, j)) += pow(grid_x.at<float>(i, j),2.0)*kdist.at<float>(i, j);
-			spatio->sigma_y.at<double>((int)binno.at<float>(i, j)) += pow(grid_y.at<float>(i, j),2.0)*kdist.at<float>(i, j);
-		}
-	}
-
-	for (int i = 0; i < spatio->sigma_x.rows; i++) {
-		spatio->sigma_x.at<double>(i) /= wsum.at<double>(i);
-		spatio->sigma_x.at<double>(i) -= pow(spatio->mu.at<double>(i, 0) / wsum.at<double>(i), 2.0);
-		spatio->sigma_x.at<double>(i) += (min_mk - spatio->sigma_x.at<double>(i))*(spatio->sigma_x.at<double>(i)<min_mk);
-
-		spatio->sigma_y.at<double>(i) /= wsum.at<double>(i);
-		spatio->sigma_y.at<double>(i) -= pow(spatio->mu.at<double>(i, 1) / wsum.at<double>(i), 2.0);
-		spatio->sigma_y.at<double>(i) += (min_mk - spatio->sigma_y.at<double>(i))*(spatio->sigma_y.at<double>(i)<min_mk);
-	}
-
-	////Normalizzazione del mean vector
-	for (int i = 0; i < spatio->mu.rows; i++) {
-		spatio->mu.at<double>(i,0) /= wsum.at<double>(i);
-		spatio->mu.at<double>(i,1) /= wsum.at<double>(i);
-	}
-
-	cin.get();
-}
-
-double match_spatiogram(spatiogram* spatio1, spatiogram* spatio2)
-{
-	Mat qx = Mat::zeros(spatio1->sigma_x.size(), CV_64FC1);
-	Mat qy = Mat::zeros(spatio1->sigma_x.size(), CV_64FC1);
-	Mat q = Mat::zeros(spatio1->sigma_x.size(), CV_64FC1);
-
-	double C = 2 * sqrt(2 * PI);
-	double C2 = 1 / (2 * PI);
-
-	cout << C2 << endl;
-
-	for (int i = 0; i < spatio1->sigma_x.rows; i++) {
-		qx.at<double>(i) = spatio1->sigma_x.at<double>(i) + spatio2->sigma_x.at<double>(i);
-		qy.at<double>(i) = spatio1->sigma_y.at<double>(i) + spatio2->sigma_y.at<double>(i);
-
-		q.at<double>(i) = C * pow((qx.at<double>(i) * qy.at<double>(i)), 1 / 4.0);
-	}
-
-	Mat sigmai_x = Mat::zeros(spatio1->sigma_x.size(), CV_64FC1);
-	Mat sigmai_y = Mat::zeros(spatio1->sigma_x.size(), CV_64FC1);
-
-	for (int i = 0; i < spatio2->sigma_x.rows; i++) {
-		sigmai_x.at<double>(i) = 1.0 / (1.0 / (spatio1->sigma_x.at<double>(i)
-			+ (spatio1->sigma_x.at<double>(i) == 0)) + 1.0 /
-			(spatio2->sigma_x.at<double>(i) + (spatio2->sigma_x.at<double>(i) == 0)));
-
-		sigmai_y.at<double>(i) = 1.0 / (1.0 / (spatio1->sigma_y.at<double>(i)
-			+ (spatio1->sigma_y.at<double>(i) == 0)) + 1.0 /
-			(spatio2->sigma_y.at<double>(i) + (spatio2->sigma_y.at<double>(i) == 0)));
-	}
-
-	Mat Q = Mat::zeros(spatio1->sigma_x.size(), CV_64FC1);
-	for (int i = 0; i < spatio1->sigma_x.rows; i++) {
-		Q.at<double>(i) = C * pow(sigmai_x.at<double>(i)*sigmai_y.at<double>(i),1/4.0);
-	}
-
-	Mat x = Mat::zeros(spatio1->mu.rows,1, CV_64FC1);
-	Mat y = Mat::zeros(spatio1->mu.rows,1, CV_64FC1);
-
-	for (int i = 0; i < spatio1->mu.rows; i++) {
-		x.at<double>(i) = spatio1->mu.at<double>(i, 0) - spatio2->mu.at<double>(i, 0);
-		y.at<double>(i) = spatio1->mu.at<double>(i, 1) - spatio2->mu.at<double>(i, 1);
-	}
-
-	for (int i = 0; i < qx.rows; i++) {
-		//uso qx e qy come i sigmax del codice originale
-		qx.at<double>(i) *= 2.0;
-		qy.at<double>(i) *= 2.0;
-	}
-
-	Mat isigma_x = Mat::zeros(spatio1->sigma_x.size(), CV_64FC1);
-	Mat isigma_y = Mat::zeros(spatio1->sigma_x.size(), CV_64FC1);
-	for (int i = 0; i < qx.rows; i++) {
-		isigma_x.at<double>(i) = 1.0 / (qx.at<double>(i) + (qx.at<double>(i) == 0));
-		isigma_y.at<double>(i) = 1.0 / (qy.at<double>(i) + (qy.at<double>(i) == 0));
-	}
-
-	Mat detsigmax = Mat::zeros(spatio1->sigma_x.size(), CV_64FC1);
-	for (int i = 0; i < qx.rows; i++) {
-		detsigmax.at<double>(i) = qx.at<double>(i) * qy.at<double>(i);
-	}
-
-	Mat z = Mat::zeros(isigma_x.size(), CV_64FC1);
-	for (int i = 0; i < z.rows; i++) {
-		z.at<double>(i) = C2/sqrt(detsigmax.at<double>(i))*exp(-0.5 * 
-			(isigma_x.at<double>(i) *pow(x.at<double>(i),2.0) + 
-			 isigma_y.at<double>(i) *pow(y.at<double>(i),2.0)));
-	}
-
-	Mat dist = Mat::zeros(z.size(), CV_64FC1);
-	for (int i = 0; i < z.rows; i++) {
-		dist.at<double>(i) = q.at<double>(i)*Q.at<double>(i)*z.at<double>(i);
-	}
-
-	//cout << dist.t() << endl;
-
-	Mat s = Mat::zeros(spatio1->histogram.size(), CV_64FC1);
-	for (int i = 0; i < spatio1->histogram.rows; i++) {
-		s.at<double>(i) = sqrt(spatio1->histogram.at<double>(i))*
-			sqrt(spatio2->histogram.at<double>(i))*
-			dist.at<double>(i);
-	}
-
-	cout << spatio1->histogram.t() << endl;
-	cout << spatio2->histogram.t() << endl;
-	cout << dist.t() << endl;
-	cout << s.t() << endl;
-
-	double sum_s = 0.0;
-	for (int i = 0; i < s.rows; i++) {
-		sum_s += isnan(s.at<double>(i)) ? 0 : s.at<double>(i);
-	}
-
-	return sum_s;
-}
-
-int main() 
-{
 	/*Mat input = Mat(3, 4, CV_8UC3);
 	input.at<Vec3b>(0, 0) = Vec3b(7,7,7);
 	input.at<Vec3b>(0, 1) = Vec3b(2,2,2);
@@ -471,9 +394,11 @@ int main()
 	code* coder2 = code_create(sub2);
 
 	code_encode(coder1);
+	cout << coder1->code_spatiogram->spatiogram->histogram.t();
 	code_encode(coder2);
 
-	cout << code_match(coder1, coder2);*/
+	cout << code_match(coder1, coder2);
+	cin.get();*/
 
 	//create_spatiogram(input1, mask1, spatio1);
 	//create_spatiogram(input2, mask2, spatio2);
@@ -552,13 +477,13 @@ int main()
 
 
 	///MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN MAIN
-	clock_t start, end;
+	/*clock_t start, end;
 	double tempo;
 	start = clock();
 
 	//Riscrivere tutto in modo che la gallery sia caricata e non ricalcolata ogni volta
-	const char* gallery_file = "gallery_files.txt";
-	const char* probe_file = "probe_files.txt";
+	const char* gallery_file = "gallery_final.txt";
+	const char* probe_file = "probe_final.txt";
 	//const char* probe_file = "single_probe.txt";
 
 	FILE* probe = NULL;
@@ -604,9 +529,19 @@ int main()
 	for (int t = 0; t < NUM_THREADS; t++)
 		thds[t].join();
 
+	/*double min_res;
+	double max_res;
+	minMaxLoc(results, &min_res, &max_res);
+
+	for (int i = 0; i < results.rows; i++) {
+		for (int j = 0; j < results.cols; j++) {
+			results.at<double>(i, j) /= max_res;
+		}
+	}*/
+
 	//Stampa dei risultati
-	ofstream output;
-	output.open("results_SPATIOGRAM.csv");
+	/*ofstream output;
+	output.open("results_SPATIOGRAM3.0.csv");
 
 	string firstrow = " ;";
 	for (int i = 0; i < gallery_names.size(); i++)
@@ -629,7 +564,6 @@ int main()
 	tempo = ((double)(end - start)) / CLOCKS_PER_SEC;
 	std::cout << to_string(tempo);
 	std::cin.get();
-
 
 	//MAIN MATCHING GENERALE
 	/*subject* sub1 = subject_create();
