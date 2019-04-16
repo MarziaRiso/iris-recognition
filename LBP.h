@@ -11,4 +11,3 @@ void calc_standard_lbp(subject* sub, coder_LBP *coder);
 float contrast_lbp_pixel(Mat img_in, int row, int column);
 float difference_lbp_pixel(Mat img_in, int row, int column);
 void calc_contrast_lbp(subject* sub, coder_LBP *coder);
-//void create_equalized_image(coder_LBP *coder);
