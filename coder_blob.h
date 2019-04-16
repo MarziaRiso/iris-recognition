@@ -13,10 +13,10 @@ using namespace cv;
 #define MOD(x,y) ((x) >= 0 ? ((x)%(y)) : ((y) + (x)%(y)))
 
 struct coder_blob {
-	Mat log_imgs[MAX_NUM_KERNEL];
-	Mat log_bin_imgs[MAX_NUM_KERNEL];
-	Mat log_merge;
-	Mat log_bin_merge;
+	Mat log_imgs[MAX_NUM_KERNEL];		//Array delle immagini ottenute applicando filtri LoG con diverse scale
+	Mat log_bin_imgs[MAX_NUM_KERNEL];	//Array delle immagini ottenute applicando filtri LoG con diverse scale binarizzate
+	Mat log_merge;						//Immagine ottenuta dal merge delle immagini LoG
+	Mat log_bin_merge;					//Immagine ottenuta dal merge delle immagini LoG binarizzata
 };
 
 coder_blob* coder_blob_create();

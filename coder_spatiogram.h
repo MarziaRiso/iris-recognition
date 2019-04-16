@@ -8,15 +8,16 @@ using namespace std;
 using namespace cv;
 
 struct spatiogram {
-	Mat histogram;
-	Mat mu;
-	Mat sigma_x;
-	Mat sigma_y;
+	Mat histogram;	//Histogram dell'immagine
+	Mat mu;			//Mean vector delle coordinare del pixel
+	Mat sigma_x;	//Matrice di covarianza della coordinata x dei pixel
+	Mat sigma_y;	//Matrice di convarianza della coordinata y dei pixel
+					//NOTA: le sigma_x e sigma_y potrebbero essere unite in una struttura simile a quella usata per mu!
 };
 
 struct coder_spatiogram {
-	Mat output;
-	spatiogram* spatiogram;
+	Mat output;				//Per ora non utilizzata, potrebbe contenere l'immagine Spatiogram ottenuta
+	spatiogram* spatiogram; //Puntatore alla struttura che mantiene le informazioni sullo Spatiogram calcolato
 };
 
 spatiogram* spatiogram_create();

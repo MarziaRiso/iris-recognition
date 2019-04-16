@@ -10,8 +10,8 @@ using namespace cv;
 #define NUM_ZONE 5
 
 struct coder_LBP {
-	Mat out;
-	Mat histogram[NUM_ZONE];
+	Mat out;					//Immagine LBP creata come output
+	Mat histogram[NUM_ZONE];	// Array degli istogrammi di ogni fascia dell'immagine LBP
 };
 
 coder_LBP* coder_lbp_create();

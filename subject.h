@@ -7,8 +7,8 @@ using namespace std;
 using namespace cv;
 
 struct subject {
-	Mat input;
-	Mat mask;
+	Mat input; //Immagine dell'iride (normalizzata o no in base a dove è usato)
+	Mat mask; //Maschera binaria relativa all'immagine in input 
 };
 
 subject* subject_create();

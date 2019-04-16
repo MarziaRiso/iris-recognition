@@ -8,12 +8,10 @@ using namespace cv;
 void convert_lightness(Mat &img_in, Mat&img_out);
 void convert_average(Mat &img_in, Mat&img_out);
 void convert_luminosity(Mat &img_in, Mat&img_out);
-void convert_clahe(Mat &img_in, Mat &img_out);
-void convert_reduce_saturation(Mat &img_in, Mat &img_out, int thresh);
-void convert_whitening(Mat &img_in, Mat &img_out, int thresh);
 
-int calcPixelPosterize(Mat &img_in, int row, int column, int windowSize);
-void calcPosterizeGrayscale(Mat &img_in, Mat &img_out, int windowSize);
-void calcPosterizeColor(Mat &img_in, Mat &img_out, int windowSize);
+int calc_posterize_pixel(Mat &img_in, int row, int column, int windowSize);
+void calc_posterize_gray(Mat &img_in, Mat &img_out, int windowSize);
+void calc_posterize(Mat &img_in, Mat &img_out, int windowSize);
 void delete_sclera_gray(Mat &img_in, Mat &img_out, int threshold);
-void delete_sclera(Mat &img_in, Mat &img_out);
+void delete_sclera(Mat &img_in, Mat &img_out, int threshold);
+void calc_equalized(Mat& img_in, Mat& img_out);

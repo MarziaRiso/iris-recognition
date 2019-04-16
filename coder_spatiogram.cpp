@@ -3,6 +3,11 @@
 
 #define PI 3.1415
 
+
+/**
+* Metodo che crea e inizializza la struttura Spatiogram
+* @return puntatore allo Spatiogram creato
+**/
 spatiogram* spatiogram_create() {
 	spatiogram* spatio = (spatiogram*)calloc(1, sizeof(spatiogram));
 	spatio->histogram = Mat::zeros(256, 1, CV_64FC1);
@@ -12,6 +17,11 @@ spatiogram* spatiogram_create() {
 	return spatio;
 }
 
+
+/**
+* Metodo che rilascia le risorse impegnate dalla struttura Spatiogram
+* @param spatio puntatore a Spatiogram da rilasciare
+**/
 void spatiogram_free(spatiogram* spatio)
 {
 	spatio->histogram.release();
@@ -21,6 +31,11 @@ void spatiogram_free(spatiogram* spatio)
 	free(spatio);
 }
 
+
+/**
+* Metodo che crea e inizializza un coder per Spatiogram
+* @return puntatore al coder
+**/
 coder_spatiogram* coder_spatiogram_create() 
 {
 	coder_spatiogram* coder = (coder_spatiogram*)calloc(1, sizeof(coder_spatiogram));
@@ -31,6 +46,12 @@ coder_spatiogram* coder_spatiogram_create()
 	return coder;
 }
 
+
+/**
+* Metodo che effettua la codifica tramite l'operatore Spatiogram
+* @param sub soggetto a cui la codifica è riferita
+* @param coder puntatore al coder Spatiogram in cui vengono salvare le informazioni
+**/
 void coder_spatiogram_encode(subject* sub, coder_spatiogram* coder) 
 {
 	int z = sub->input.channels();
@@ -95,7 +116,7 @@ void coder_spatiogram_encode(subject* sub, coder_spatiogram* coder)
 	minMaxLoc(kdist, &min_mk);
 
 	Mat wsum = Mat::zeros(f, 1, CV_64FC1);
-
+	
 	//Funzione accumarray
 	for (int j = 0; j < binno.cols; j++) {
 		for (int i = 0; i < binno.rows; i++) {
@@ -147,6 +168,13 @@ void coder_spatiogram_encode(subject* sub, coder_spatiogram* coder)
 	}
 }
 
+
+/**
+* Metodo che effettua il match tra due codifiche Spatiogram
+* @param coder1 Codifica_1 in input
+* @param coder2 Codifica_2 in input
+* @return distanza tra le due codifiche in input
+**/
 double coder_spatiogram_match(coder_spatiogram* coder1, coder_spatiogram* coder2)
 {
 	Mat qx = Mat::zeros(coder1->spatiogram->sigma_x.size(), CV_64FC1);
@@ -234,6 +262,11 @@ double coder_spatiogram_match(coder_spatiogram* coder1, coder_spatiogram* coder2
 	return sum_s;
 }
 
+
+/**
+* Metodo che rilascia le risorse impegnate dal coder Spatiogram
+* @param coder Puntatore al coder Spatiogram da rilasciare
+**/
 void coder_spatiogram_free(coder_spatiogram* coder) 
 {
 	spatiogram_free(coder->spatiogram);

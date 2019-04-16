@@ -10,16 +10,11 @@
 using namespace std;
 using namespace cv;
 
-//GALLERY: 79 persone, 10 immagini a persona circa
-//quindi in totale 790 immagini 
-//considero l'80% per fare il modello e il 20%
-//per fare il probe (158 immagini circa, cioè 2 immagini a persona)
-
 struct code {
-	subject* eye;
-	coder_LBP* code_lbp;
-	coder_blob* code_blob;
-	coder_spatiogram* code_spatiogram;
+	subject* eye;						//Puntatore al subject a cui il code è riferito
+	coder_LBP* code_lbp;				//Puntatore al codificatore per LBP
+	coder_blob* code_blob;				//Puntatore al codificatore per Blob
+	coder_spatiogram* code_spatiogram;	//Puntatore al codificatore per Spatiogram
 };
 
 code* code_create(subject* eye);
